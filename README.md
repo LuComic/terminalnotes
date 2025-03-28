@@ -12,7 +12,7 @@ Perks over regular note taking apps:
   - Since it's basic python code, you can easily modify and add features to your liking!
 
 - Works Anywhere and Minimal setup!
-  - Since it runs on the terminal, any machine with python installed can run it.
+  - Thanks to running on terminal, any machine with python installed can run it.
   - Very few dependancies that take up almost no space and are extremely lightweight!
 
 - Simplicity is Key
