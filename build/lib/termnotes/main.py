@@ -240,6 +240,7 @@ def run():
   \__/\___/_/  /_/ /_/ /_/_/ /_/\____/\__/\___/____/     
   """)
   print("\n\033[1;36mCommands:\033[0m\no name - open a folder/note\nnf name - create a new folder\nnn name - create a new note\nd name - delete a note/folder\nl - list folders\nb - back to folders\ne - edit folder/note\ns name - search\nhelp - displays commands\nhelp+ - more specific instructions\n")
+  print("Get started by entering 'l' to list your root folder directory.\n")
 
   while True:
     choice = input()
