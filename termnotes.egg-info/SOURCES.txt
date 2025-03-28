@@ -1,0 +1,11 @@
+MANIFEST.in
+README.md
+setup.py
+termnotes/__init__.py
+termnotes/main.py
+termnotes.egg-info/PKG-INFO
+termnotes.egg-info/SOURCES.txt
+termnotes.egg-info/dependency_links.txt
+termnotes.egg-info/entry_points.txt
+termnotes.egg-info/requires.txt
+termnotes.egg-info/top_level.txt
