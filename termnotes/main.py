@@ -126,14 +126,14 @@ def delete_note_or_folder(name, is_folder):
   if is_folder:
     if os.path.exists(path) and os.path.isdir(path):
       shutil.rmtree(path)
-      print(f"\nFolder '{name}' deleted.\n")
+      print(f"\n\033[32mFolder '{name}' deleted.\033[0m\n")
     else:
       print("\n\033[31mFolder not found.\033[0m\n")
   else:
     note_path = os.path.join(BASE_DIR, name + ".txt")
     if os.path.exists(note_path):
       os.remove(note_path)
-      print(f"\nNote '{name}' deleted.\n")
+      print(f"\n\033[32mNote '{name}' deleted.\033[0m\n")
     else:
       print("\n\033[31mNote not found.\033[0m\n")
 
