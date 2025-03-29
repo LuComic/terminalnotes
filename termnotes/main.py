@@ -3,6 +3,8 @@
 import os
 import shutil
 import appdirs
+import readline
+import pyperclip
 
 # Get the system-specific Notes folder
 BASE_DIR = appdirs.user_data_dir("Termnotes", "Termnotes")
@@ -97,7 +99,7 @@ def search(name):
     print(f"└── {folder}/{note} (n)")
     
   print("\nType the folder name to open it or 'c' to cancel:")
-  choice = input().strip()
+  choice = input("\033[1;36mFolder: \033[0m").strip()
 
   if os.path.exists(os.path.join(BASE_DIR, choice)):
     in_folder = choice
@@ -170,7 +172,7 @@ def edit_note_or_folder(name):
     new_content = old_content[:]  # Copy old content
 
     while True:
-      command = input("\nEnter line number to edit, 'a' to append, 'd + line number' to delete, or 'save' to save: ").strip()
+      command = input("\nEnter line number to edit\n'a' to append\n'd + line number' to delete\n'c + line number' to copy line\nor 'save' to save: ").strip()
 
       if command.lower() == "save":
         break
@@ -197,6 +199,14 @@ def edit_note_or_folder(name):
           print(f"\nLine {line_number + 1} deleted.")
         else:
           print("\033[31mInvalid line number.\033[0m")
+      elif command.startswith("c ") and command[2:].isdigit():
+        line_number = int(command[2:]) - 1
+        if 0 <= line_number < len(new_content):
+            copied_line = new_content[line_number]  # Copy the specified line
+            pyperclip.copy(copied_line)  # Copy the line to the clipboard
+            print(f"\nLine {line_number + 1} copied to clipboard.")
+        else:
+            print("\033[31mInvalid line number.\033[0m")
       else:
         print("\033[31mInvalid command.\033[0m")
 
