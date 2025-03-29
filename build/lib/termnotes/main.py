@@ -243,7 +243,7 @@ def run():
   print("Get started by entering 'l' to list your root folder directory.\n")
 
   while True:
-    choice = input()
+    choice = input("\033[1;36mcmd: \033[0m")
 
     if choice.startswith("o "):  # Open a folder or note
       name = choice[2:]
