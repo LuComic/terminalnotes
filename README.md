@@ -19,7 +19,7 @@ A simple, yet fast and efficient note taking app in your terminal!
   - Without fancy UI elements, ads and other bs, your workflow will be twice as fast and improve your productivity!
 
 ## Installation
-
+### Install may be buggy, so if it doesn't work you can copy the python script and configure that
 To install, run:
 
 ```bash
