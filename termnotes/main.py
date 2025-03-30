@@ -233,6 +233,7 @@ def edit_note_or_folder(name):
       if in_folder == name:
         in_folder = new_name  # Update reference
 
+
 def run():
   # Initialize storage
   setup()
