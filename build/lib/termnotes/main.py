@@ -252,14 +252,14 @@ def edit_note_or_folder(name):
     with open(note_path, "r") as file:
       old_content = file.readlines()
 
-    print(f"\n\033[1;{theme_color}mCurrent content:\033[0m\n(Type a line number to edit, 'a' to append new content, 'd + line number' to delete, 'done' to finish)")
+    print(f"\n\033[1;{theme_color}mCurrent content:\033[0m")
     for i, line in enumerate(old_content, 1):
       print(f"{i}: {line.strip()}")
 
     new_content = old_content[:]  # Copy old content
 
     while True:
-      command = input(f"\n\033[1;{theme_color}mEnter:\033[0m\nline number to edit\n'a' to append\n'd + line number' to delete\n'c + line number' to copy line\n'save' to save:\n\n\033[1;{theme_color}mcmd: \033[0m").strip()
+      command = input(f"\n\033[1;{theme_color}mEnter:\033[0m\n'line number' to edit\n'a' to append\n'd + line number' to delete\n'c + line number' to copy line\n'save' to save:\n\n\033[1;{theme_color}mcmd: \033[0m").strip()
 
       if command.lower() == "save":
         break
@@ -283,7 +283,7 @@ def edit_note_or_folder(name):
         line_number = int(command[2:]) - 1
         if 0 <= line_number < len(new_content):
           del new_content[line_number]  # Delete the specified line
-          print(f"\nLine {line_number + 1} deleted.")
+          print(f"\n\033[32mLine {line_number + 1} deleted.\033[0m")
         else:
           print("\033[31mInvalid line number.\033[0m")
       elif command.startswith("c ") and command[2:].isdigit():
