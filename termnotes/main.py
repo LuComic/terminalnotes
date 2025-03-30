@@ -22,7 +22,7 @@ def list_folders():
   """Lists all folders inside the Notes directory."""
   folders = [f for f in os.listdir(BASE_DIR) if os.path.isdir(os.path.join(BASE_DIR, f))]
 
-  print("\n\033[1;36mFolders:\033[0m")
+  print("\n\033[1;34mFolders:\033[0m")
 
   if not folders:
     print(f"└── Create a folder with 'nf name'\n")  # Last folder gets a different symbol
@@ -43,7 +43,7 @@ def list_notes(folder):
   
   notes = [f.replace(".txt", "") for f in os.listdir(folder_path) if f.endswith(".txt")]
 
-  print(f"\n\033[1;36m{folder}:\033[0m")
+  print(f"\n\033[1;34m{folder}:\033[0m")
 
   if not notes:
     print(f"└── Create a note with 'nn name'\n")  # Last folder gets a different symbol
@@ -90,7 +90,7 @@ def search(name):
     print("\n\033[31mNo matching folders or notes found.\033[0m\n")
     return
   
-  print("\n\033[1;36mSearch Results:\033[0m")
+  print("\n\033[1;34mSearch Results:\033[0m")
   
   for folder in found_folders:
     print(f"├── {folder} (f)")
@@ -99,7 +99,7 @@ def search(name):
     print(f"└── {folder}/{note} (n)")
     
   print("\nType the folder name to open it or 'c' to cancel:")
-  choice = input("\033[1;36mFolder: \033[0m").strip()
+  choice = input("\033[1;34mFolder: \033[0m").strip()
 
   if os.path.exists(os.path.join(BASE_DIR, choice)):
     in_folder = choice
@@ -165,14 +165,14 @@ def edit_note_or_folder(name):
     with open(note_path, "r") as file:
       old_content = file.readlines()
 
-    print("\n\033[1;36mCurrent content:\033[0m\n(Type a line number to edit, 'a' to append new content, 'd + line number' to delete, 'done' to finish)")
+    print("\n\033[1;34mCurrent content:\033[0m\n(Type a line number to edit, 'a' to append new content, 'd + line number' to delete, 'done' to finish)")
     for i, line in enumerate(old_content, 1):
       print(f"{i}: {line.strip()}")
 
     new_content = old_content[:]  # Copy old content
 
     while True:
-      command = input("\n\033[1;36mEnter:\033[0m\nline number to edit\n'a' to append\n'd + line number' to delete\n'c + line number' to copy line\n'save' to save:\n\n\033[1;36mcmd: \033[0m").strip()
+      command = input("\n\033[1;34mEnter:\033[0m\nline number to edit\n'a' to append\n'd + line number' to delete\n'c + line number' to copy line\n'save' to save:\n\n\033[1;34mcmd: \033[0m").strip()
 
       if command.lower() == "save":
         break
@@ -254,7 +254,7 @@ def run():
   list_folders()
 
   while True:
-    choice = input("\033[1;36mcmd: \033[0m")
+    choice = input("\033[1;34mcmd: \033[0m")
 
     if choice.startswith("o "):  # Open a folder or note
       name = choice[2:]
@@ -317,10 +317,10 @@ def run():
       search(name)
 
     elif choice == "help":
-      print("\n\033[1;36mCommands:\n\033[0m\no name - open a folder/note\nnf name - create a new folder\nnn name - create a new note\nd name - delete a folder/note\nl - list folders/notes\nb - back to folders\ne - edit folder/note\ns name - search (case sensitive)\nhelp - displays commands\nhelp+ - more specific instructions\nq - quit\n")
+      print("\n\033[1;34mCommands:\n\033[0m\no name - open a folder/note\nnf name - create a new folder\nnn name - create a new note\nd name - delete a folder/note\nl - list folders/notes\nb - back to folders\ne - edit folder/note\ns name - search (case sensitive)\nhelp - displays commands\nhelp+ - more specific instructions\nq - quit\n")
 
     elif choice == "help+":
-      print("\n\033[1;36mInstructions:\033[0m\n\n\033[1mo name\033[0m - if you're in the root folder, it opens a folder, if you're in a folder, it opens a note\n\033[1mnf name\033[0m - creates a folder with the given name into the root folder\n\033[1mnn name\033[0m - create a new note with the given name. Must be inside of a folder!\n\033[1md name\033[0m - if you're in the root folder, it deletes a folder, if you're in a folder, it deletes a note\n\033[1ml\033[0m - if you're in the root folder, it lists all folders, if you're in a folder, it lists all notes\n\033[1mb\033[0m - takes you back to the root folder\n\033[1me\033[0m - if you're in the root folder, it allows you to edit a folder name, if you're in a folder, it allows you to edit the note name and its contents\n\033[1ms\033[0m - search for folder or note. If found, you can open the folder in which it was found (search is case sensitive)\n(f) - type of (folder)\n(n) - type of (note)\n\033[1mhelp\033[0m - displays commands\n\033[1mhelp+\033[0m - more specific instructions\n\033[1mq\033[0m - quits the application\n")
+      print("\n\033[1;34mInstructions:\033[0m\n\n\033[1mo name\033[0m - if you're in the root folder, it opens a folder, if you're in a folder, it opens a note\n\033[1mnf name\033[0m - creates a folder with the given name into the root folder\n\033[1mnn name\033[0m - create a new note with the given name. Must be inside of a folder!\n\033[1md name\033[0m - if you're in the root folder, it deletes a folder, if you're in a folder, it deletes a note\n\033[1ml\033[0m - if you're in the root folder, it lists all folders, if you're in a folder, it lists all notes\n\033[1mb\033[0m - takes you back to the root folder\n\033[1me\033[0m - if you're in the root folder, it allows you to edit a folder name, if you're in a folder, it allows you to edit the note name and its contents\n\033[1ms\033[0m - search for folder or note. If found, you can open the folder in which it was found (search is case sensitive)\n(f) - type of (folder)\n(n) - type of (note)\n\033[1mhelp\033[0m - displays commands\n\033[1mhelp+\033[0m - more specific instructions\n\033[1mq\033[0m - quits the application\n")
 
     elif choice == "q":
       break
