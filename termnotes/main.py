@@ -250,8 +250,8 @@ def run():
   / /_/  __/ /  / / / / / / / / / /_/ / /_/  __(__  )    
   \__/\___/_/  /_/ /_/ /_/_/ /_/\____/\__/\___/____/     
   """)
-  print("\n\033[1;36mCommands:\n\033[0m\no name - open a folder/note\nnf name - create a new folder\nnn name - create a new note\nd name - delete a note/folder\nl - list folders\nb - back to folders\ne - edit folder/note\ns name - search (case sensitive)\nhelp - displays commands\nhelp+ - more specific instructions\nq - quit\n")
-  print("Get started by entering 'l' to list your root folder directory.\n")
+  print("Get started by entering 'help' for commands.\n")
+  list_folders()
 
   while True:
     choice = input("\033[1;36mcmd: \033[0m")
@@ -317,7 +317,7 @@ def run():
       search(name)
 
     elif choice == "help":
-      print("\n\033[1;36mCommands:\n\033[0m\no name - open a folder/note\nnf name - create a new folder\nnn name - create a new note\nd name - delete a note/folder\nl - list folders\nb - back to folders\ne - edit folder/note\ns name - search (case sensitive)\nhelp - displays commands\nhelp+ - more specific instructions\nq - quit\n")
+      print("\n\033[1;36mCommands:\n\033[0m\no name - open a folder/note\nnf name - create a new folder\nnn name - create a new note\nd name - delete a folder/note\nl - list folders/notes\nb - back to folders\ne - edit folder/note\ns name - search (case sensitive)\nhelp - displays commands\nhelp+ - more specific instructions\nq - quit\n")
 
     elif choice == "help+":
       print("\n\033[1;36mInstructions:\033[0m\n\n\033[1mo name\033[0m - if you're in the root folder, it opens a folder, if you're in a folder, it opens a note\n\033[1mnf name\033[0m - creates a folder with the given name into the root folder\n\033[1mnn name\033[0m - create a new note with the given name. Must be inside of a folder!\n\033[1md name\033[0m - if you're in the root folder, it deletes a folder, if you're in a folder, it deletes a note\n\033[1ml\033[0m - if you're in the root folder, it lists all folders, if you're in a folder, it lists all notes\n\033[1mb\033[0m - takes you back to the root folder\n\033[1me\033[0m - if you're in the root folder, it allows you to edit a folder name, if you're in a folder, it allows you to edit the note name and its contents\n\033[1ms\033[0m - search for folder or note. If found, you can open the folder in which it was found (search is case sensitive)\n(f) - type of (folder)\n(n) - type of (note)\n\033[1mhelp\033[0m - displays commands\n\033[1mhelp+\033[0m - more specific instructions\n\033[1mq\033[0m - quits the application\n")
