@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from datetime import datetime
 import os
 import shutil
 import appdirs
@@ -123,7 +124,7 @@ def create_folder(name):
   global auto_complete_names
   if check_name(name):
     os.makedirs(folder_path, exist_ok=True)
-    print(f"\n\033[32mNew folder '{name}' created\033[0m\n")
+    print(f"\n\033[32mNew folder '{name}' created.\033[0m\n")
     auto_complete_names.append(name)  # Add folder name to the autocomplete list
     update_completer()
   else:
@@ -430,13 +431,29 @@ def run():
         json.dump({"theme_color": theme_color}, f)
 
     elif choice == "help":
-      print(f"\n\033[1;{theme_color}mCommands:\n\033[0m\no name - open a folder/note\nnf name - create a new folder\nnn name - create a new note\nd name - delete a folder/note\nl - list folders/notes\nb - back to folders\ne - edit folder/note\ns name - search (case sensitive)\nhelp - displays commands\nhelp+ - more specific instructions\nq - quit\n")
+      print(f"\n\033[1;{theme_color}mCommands:\n\033[0m\no name - open a folder/note\nnf name - create a new folder\nnn name - create a new note\nd name - delete a folder/note\nl - list folders/notes\nb - back to folders\ne - edit folder/note\ns name - search (case sensitive)\ndn - creates a daily note in the 'daily' folder\nhelp - displays commands\nhelp+ - more specific instructions\nq - quit\n")
 
     elif choice == "help+":
-      print(f"\n\033[1;{theme_color}mInstructions:\033[0m\n\n\033[1mo name\033[0m - if you're in the root folder, it opens a folder, if you're in a folder, it opens a note\n\033[1mnf name\033[0m - creates a folder with the given name into the root folder\n\033[1mnn name\033[0m - create a new note with the given name. Must be inside of a folder!\n\033[1md name\033[0m - if you're in the root folder, it deletes a folder, if you're in a folder, it deletes a note\n\033[1ml\033[0m - if you're in the root folder, it lists all folders, if you're in a folder, it lists all notes\n\033[1mb\033[0m - takes you back to the root folder\n\033[1me\033[0m - if you're in the root folder, it allows you to edit a folder name, if you're in a folder, it allows you to edit the note name and its contents\n\033[1ms\033[0m - search for folder or note. If found, you can open the folder in which it was found (search is case sensitive)\n(f) - type of (folder)\n(n) - type of (note)\n\033[1mhelp\033[0m - displays commands\n\033[1mhelp+\033[0m - more specific instructions\n\033[1mt color\033[0m - choose a theme color:\nblack\nred\ngreen\nyellow\nblue\nmagenta\ncyan\nwhite\n\033[1mq\033[0m - quits the application\n")
+      print(f"\n\033[1;{theme_color}mInstructions:\033[0m\n\n\033[1mo name\033[0m - if you're in the root folder, it opens a folder, if you're in a folder, it opens a note\n\033[1mnf name\033[0m - creates a folder with the given name into the root folder\n\033[1mnn name\033[0m - create a new note with the given name. Must be inside of a folder!\n\033[1mdn\033[0m - creates a new note with the current dater. Adds it to the 'dailys' folder, if not created then it will create it.\n\033[1md name\033[0m - if you're in the root folder, it deletes a folder, if you're in a folder, it deletes a note\n\033[1ml\033[0m - if you're in the root folder, it lists all folders, if you're in a folder, it lists all notes\n\033[1mb\033[0m - takes you back to the root folder\n\033[1me\033[0m - if you're in the root folder, it allows you to edit a folder name, if you're in a folder, it allows you to edit the note name and its contents\n\033[1ms\033[0m - search for folder or note. If found, you can open the folder in which it was found (search is case sensitive)\n(f) - type of (folder)\n(n) - type of (note)\n\033[1mhelp\033[0m - displays commands\n\033[1mhelp+\033[0m - more specific instructions\n\033[1mt color\033[0m - choose a theme color:\nblack\nred\ngreen\nyellow\nblue\nmagenta\ncyan\nwhite\n\033[1mq\033[0m - quits the application\n")
 
     elif choice == "q":
       break
+
+    elif choice == "dn":
+      if "dailys" not in [f for f in os.listdir(BASE_DIR) if os.path.isdir(os.path.join(BASE_DIR, f))]:
+        create_folder("dailys")
+      in_folder = "dailys"
+      print(f"\033[32mYou are in 'dailys' folder.\033[0m\n")
+      name = datetime.today().strftime('%Y-%m-%d')
+      print("Note content (enter 'save' to finish):")
+        
+      content = ""
+      while True:
+        line = input()
+        if line.lower() == "save":  # Stop when the user types "done"
+          break
+        content += line + "\n"  # Add the line to the note content
+      create_note(in_folder, name, content)
 
     else:
       print("\033[31mInvalid command.\033[0m\n")
