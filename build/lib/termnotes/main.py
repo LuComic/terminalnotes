@@ -6,15 +6,13 @@ import shutil
 import appdirs
 import readline
 import pyperclip
-import json
+from rich import print
+from rich.panel import Panel
+from rich.console import Console
+from rich.prompt import Prompt
+from rich.text import Text
 
-def load_theme_color():
-    """Load the theme color from the config file."""
-    if os.path.exists(CONFIG_FILE):  # Check if file exists
-        with open(CONFIG_FILE, "r") as f:
-            data = json.load(f)
-            return data.get("theme_color", 39)  # Default if not found
-    return 39  # Return default if file doesn't exist
+console = Console()
 
 # Function to check if name already exists
 def check_name(name):
@@ -34,9 +32,8 @@ def check_name(name):
 # Get the system-specific Notes folder
 BASE_DIR = appdirs.user_data_dir("Termnotes", "Termnotes")
 CONFIG_FILE = "config.json"
-auto_complete_names = ["skibidi"]
+auto_complete_names = []
 in_folder = None  # Tracks current folder
-theme_color = load_theme_color()
 
 # Autocomplete for names
 class MyCompleter(object):  # Custom completer
@@ -82,41 +79,48 @@ def setup():
 def list_folders():
   """Lists all folders inside the Notes directory."""
   folders = [f for f in os.listdir(BASE_DIR) if os.path.isdir(os.path.join(BASE_DIR, f))]
-  global theme_color
-
-  print(f"\n\033[1;{theme_color}mFolders:\033[0m")
 
   if not folders:
-    print(f"└── Create a folder with 'nf name'\n")  # Last folder gets a different symbol
-    return
+    content = "[dim]└── Create a folder with 'nf name'[/dim]\n"
+  else:
+    folder_lines = []
+    for i, folder in enumerate(folders):
+      if i == len(folders) - 1:  # Last item in the list
+        folder_lines.append(f"[bold]{folder}[/bold] (f)")
+      else:
+        folder_lines.append(f"[bold]{folder}[/bold] (f)")
+    content = "\n".join([f"├── {line}" for line in folder_lines[:-1]] + [f"└── {folder_lines[-1]}"])
 
-  for i, folder in enumerate(folders):
-    if i == len(folders) - 1:  # Last item in the list
-      print(f"└── {folder} (f)\n")  # Last folder gets a different symbol
-    else:
-      print(f"├── {folder} (f)")
+  panel = Panel(content, title="[bold blue]Folders[/bold blue]")  # Customize title color
+  console.print("\n")
+  console.print(panel)
+  console.print("\n")
 
 def list_notes(folder):
   """Lists all notes inside a folder."""
   folder_path = os.path.join(BASE_DIR, folder)
-  global theme_color
   if not os.path.exists(folder_path):
-    print("\n\033[31mFolder not found.\033[0m\n")
+    print("\n[bold red]Folder not found.[/bold red]\n")
     return
   
   notes = [f.replace(".txt", "") for f in os.listdir(folder_path) if f.endswith(".txt")]
 
-  print(f"\n\033[1;{theme_color}m{folder}:\033[0m")
-
   if not notes:
-    print(f"└── Create a note with 'nn name'\n")  # Last folder gets a different symbol
-    return
+      content = "[dim]└── Create a note with 'nn name'[/dim]\n"
+  else:
+    note_lines = []
+    for i, note in enumerate(notes):
+      if i == len(notes) - 1:
+        note_lines.append(f"[bold]{note}[/bold] (n)")
+      else:
+        note_lines.append(f"[bold]{note}[/bold] (n)")
+    content = "\n".join([f"├── {line}" for line in note_lines[:-1]] + [f"└── {note_lines[-1]}"])
 
-  for i, note in enumerate(notes):
-    if i == len(notes) - 1:
-      print(f"└── {note} (n)\n")  # Last note
-    else:
-      print(f"├── {note} (n)")
+  panel_title = f"[bold blue]{folder}[/bold blue]"  # Customize title color
+  panel = Panel(content, title=panel_title)
+  console.print("\n")
+  console.print(panel)
+  console.print("\n")
 
 def create_folder(name):
   """Creates a new folder inside Notes."""
@@ -124,12 +128,11 @@ def create_folder(name):
   global auto_complete_names
   if check_name(name):
     os.makedirs(folder_path, exist_ok=True)
-    print(f"\n\033[32mNew folder '{name}' created.\033[0m\n")
+    print(f"\n[bold green]New folder '{name}' created.[/bold green]\n")
     auto_complete_names.append(name)  # Add folder name to the autocomplete list
     update_completer()
   else:
-    print("\n\033[31mThere's already a file with that name.\033[0m\n")
-
+    print("\n[bold red]There's already a file with that name.[/bold red]\n")
 
 def create_note(folder, name, content):
   """Creates a new note inside a folder."""
@@ -137,7 +140,7 @@ def create_note(folder, name, content):
   global auto_complete_names
 
   if not os.path.exists(folder_path):
-    print("\n\033[31mFolder not found. Create the folder first.\033[0m\n")
+    print("\n[bold red]Folder not found. Create the folder first.[/bold red]\n")
     return
 
   if check_name(name):
@@ -146,57 +149,79 @@ def create_note(folder, name, content):
     note_path = os.path.join(folder_path, f"{name}.txt")
     with open(note_path, "w") as file:
       file.write(content)
-    print(f"\n\033[32mNew note '{name}' created in '{folder}'.\033[0m\n")
+    print(f"\n[bold green]New note '{name}' created in '{folder}'.[/bold green]\n")
   else:
-    print("\n\033[31mThere's already a file with that name.\033[0m\n")
+    print("\n[bold red]There's already a file with that name.[/bold red]\n")
 
 def search(name):
-  """Searches for a folder or note and prompts the user to open its containing folder."""
-  found_folders = [f for f in os.listdir(BASE_DIR) if os.path.isdir(os.path.join(BASE_DIR, f)) and name in f]
+  """Searches for folders or notes and prompts to open."""
+  found_folders = [
+    f for f in os.listdir(BASE_DIR)
+    if os.path.isdir(os.path.join(BASE_DIR, f)) and name in f
+  ]
   found_notes = []
-  global in_folder
-  global theme_color
-  
+
   for folder in os.listdir(BASE_DIR):
     folder_path = os.path.join(BASE_DIR, folder)
     if os.path.isdir(folder_path):
-      notes = [f.replace(".txt", "") for f in os.listdir(folder_path) if f.endswith(".txt") and name in f]
+      notes = [
+        f.replace(".txt", "")
+        for f in os.listdir(folder_path)
+        if f.endswith(".txt") and name in f
+      ]
       found_notes.extend([(folder, note) for note in notes])
-  
+
   if not found_folders and not found_notes:
-    print("\n\033[31mNo matching folders or notes found.\033[0m\n")
+    console.print("\n[bold red]No matching folders or notes found[/bold red]\n")
     return
-  
-  print(f"\n\033[1;{theme_color}mSearch Results:\033[0m")
-  
-  for folder in found_folders:
-    print(f"├── {folder} (f)")
-  
-  for folder, note in found_notes:
-    print(f"└── {folder}/{note} (n)")
-    
-  print("\nType the folder name to open it or 'c' to cancel:")
-  choice = input(f"\033[1;{theme_color}mFolder: \033[0m").strip()
+
+  search_results = []
+  if found_folders:
+    search_results.append("[bold blue]Folder:[/bold blue]")
+    for folder in found_folders:
+      search_results.append(f"├── [bold]{folder}[/bold] (f)")
+  if found_notes:
+    if found_folders:
+      search_results.append("\n[bold blue]Note:[/bold blue]")
+    else:
+      search_results.append("[bold blue]Note:[/bold blue]")
+    for folder, note in found_notes:
+      search_results.append(f"└── [bold]{folder}/{note}[/bold] (n)")
+
+  results_content = "\n".join(search_results)
+  results_panel = Panel(
+    results_content, title="[bold green]Search Results[/bold green]"
+  )
+  console.print(results_panel)
+
+  choice = Prompt.ask(
+    f"\nType the folder name to open it or 'c' to cancel",
+    default="c",
+  )
 
   if os.path.exists(os.path.join(BASE_DIR, choice)):
+    global in_folder
     in_folder = choice
     list_notes(choice)
   elif choice.lower() == "c":
-    print("\n\033[31mSearch canceled.\033[0m\n")
+    console.print("[bold yellow]\nSearch canceled.[/bold yellow]\n")
   else:
-    print("\n\033[31mInvalid choice.\033[0m\n")
+    console.print("[bold red]\nInvalid choice.[/bold red]\n")
 
 def read_note(folder, name):
-  """Reads and displays a note."""
+  """Reads and displays a note within a Rich Panel (simple version)."""
   note_path = os.path.join(BASE_DIR, folder, f"{name}.txt")
+  title = f"[bold blue]{name}[/bold blue]"
+
   if not os.path.exists(note_path):
-    print("\n\033[31mNote not found.\033[0m\n")
-    return
+    console.print(f"\n[bold red]Note '{name}' not found in '{folder}'.[/bold red]\n")
 
   with open(note_path, "r") as file:
     content = file.read()
-  
-  print(f"\n--- {name} ---\n\n{content}")
+  panel = Panel("\n" + content, title=title)
+  console.print("\n")
+  console.print(panel)
+  console.print("\n")
 
 def delete_note_or_folder(name, is_folder):
   """Deletes a note or folder."""
@@ -209,9 +234,9 @@ def delete_note_or_folder(name, is_folder):
           auto_complete_names.remove(name)
           update_completer()
       shutil.rmtree(path)
-      print(f"\n\033[32mFolder '{name}' deleted.\033[0m\n")
+      print(f"[bold green]Folder '{name}' deleted.[/bold green]\n")
     else:
-      print("\n\033[31mFolder not found.\033[0m\n")
+      print("\n[bold red]Folder not found.[/bold red]\n")
   else:
     note_path = os.path.join(BASE_DIR, name + ".txt")
     if os.path.exists(note_path):
@@ -219,21 +244,20 @@ def delete_note_or_folder(name, is_folder):
         auto_complete_names.remove(name)
         update_completer()
       os.remove(note_path)
-      print(f"\n\033[32mNote '{name}' deleted.\033[0m\n")
+      print(f"\n[bold red]Note '{name}' deleted.[/bold red]\n")
     else:
-      print("\n\033[31mNote not found.\033[0m\n")
+      print("\n\[bold red]Note not found.[/bold red]\n")
 
 def edit_note_or_folder(name):
   """Edits a note (rename and modify content) or renames a folder."""
   global in_folder
-  global theme_color
   global auto_complete_names
 
   if in_folder:  # Editing a note
     note_path = os.path.join(BASE_DIR, in_folder, f"{name}.txt")
 
     if not os.path.exists(note_path):
-      print("\n\033[31mNote not found.\033[0m\n")
+      print("\n[bold red]Note not found.[/bold red]\n")
       return
 
     # Step 1: Rename the note (optional)
@@ -245,7 +269,7 @@ def edit_note_or_folder(name):
       auto_complete_names.remove(name)
       auto_complete_names.append(new_name)
       os.rename(note_path, new_path)
-      print(f"\nNote renamed to '{new_name}'.\n")
+      print(f"\n[bold green]Note renamed to '{new_name}'.[/bold green]\n")
       name = new_name  # Update name
       note_path = new_path  # Update path
 
@@ -253,14 +277,14 @@ def edit_note_or_folder(name):
     with open(note_path, "r") as file:
       old_content = file.readlines()
 
-    print(f"\n\033[1;{theme_color}mCurrent content:\033[0m")
+    print(f"\n[bold blue]Current content:[/bold blue]")
     for i, line in enumerate(old_content, 1):
       print(f"{i}: {line.strip()}")
 
     new_content = old_content[:]  # Copy old content
 
     while True:
-      command = input(f"\n\033[1;{theme_color}mEnter:\033[0m\n'line number' to edit\n'a' to append\n'd + line number' to delete\n'c + line number' to copy line\n'save' to save:\n\n\033[1;{theme_color}mcmd: \033[0m").strip()
+      command = console.input("[bold blue]\nEnter:[/bold blue]\n'line number' to edit\n'a' to append\n'd + line number' to delete\n'c + line number' to copy line\n'save' to save:\n\n[bold blue]cmd: [/bold blue]").strip()
 
       if command.lower() == "save":
         break
@@ -279,35 +303,35 @@ def edit_note_or_folder(name):
           if new_text:
             new_content[line_number] = new_text + "\n"  # Modify the line
         else:
-          print("\033[31mInvalid line number.\033[0m")
+          print("[bold red]Invalid line number.[/bold red]")
       elif command.startswith("d ") and command[2:].isdigit():
         line_number = int(command[2:]) - 1
         if 0 <= line_number < len(new_content):
           del new_content[line_number]  # Delete the specified line
-          print(f"\n\033[32mLine {line_number + 1} deleted.\033[0m")
+          print(f"\n[bold green]Line {line_number + 1} deleted.[/bold green]")
         else:
-          print("\033[31mInvalid line number.\033[0m")
+          print("[bold red]Invalid line number.[/bold red]")
       elif command.startswith("c ") and command[2:].isdigit():
         line_number = int(command[2:]) - 1
         if 0 <= line_number < len(new_content):
             copied_line = new_content[line_number]  # Copy the specified line
             pyperclip.copy(copied_line)  # Copy the line to the clipboard
-            print(f"\n\033[32mLine {line_number + 1} copied to clipboard.\033[0m")
+            print(f"\n[bold green]Line {line_number + 1} copied to clipboard.[/bold green]")
         else:
-            print("\033[31mInvalid line number.\033[0m")
+            print("[bold red]Invalid line number.[/bold red]")
       else:
-        print("\033[31mInvalid command.\033[0m")
+        print("[bold red]Invalid command.[/bold red]")
 
     # Save updated content
     with open(note_path, "w") as file:
       file.writelines(new_content)
     
-    print("\n\033[32mNote updated successfully.\033[0m\n")
+    print("\n[bold green]Note updated successfully.[/bold green]\n")
 
   else:  # Renaming a folder
     folder_path = os.path.join(BASE_DIR, name)
     if not os.path.exists(folder_path):
-      print("\n\033[31mFolder not found.\033[0m\n")
+      print("\n[bold red]Folder not found.[/bold red]\n")
       return
 
     print("\nEnter a new name for the folder:")
@@ -318,16 +342,17 @@ def edit_note_or_folder(name):
       auto_complete_names.append(new_name)
       new_folder_path = os.path.join(BASE_DIR, new_name)
       os.rename(folder_path, new_folder_path)
-      print(f"\n\033[32mFolder renamed to '{new_name}'.\033[0m\n")
+      print(f"\n[bold green]Folder renamed to '{new_name}'.[/bold green]\n")
 
       if in_folder == name:
         in_folder = new_name  # Update reference
+
+
 
 def run():
   # Initialize storage
   setup()
   global in_folder
-  global theme_color
 
   print(r"""
   _       __     __                             __      
@@ -344,7 +369,7 @@ def run():
   list_folders()
 
   while True:
-    choice = input(f"\033[1;{theme_color}mcmd: \033[0m")
+    choice = console.input("[bold blue]cmd: [/bold blue]").strip()
 
     if choice.startswith("o "):  # Open a folder or note
       name = choice[2:]
@@ -355,7 +380,7 @@ def run():
           in_folder = name
           list_notes(name)
         else:
-          print("\n\033[31mFolder not found.\033[0m\n")
+          print("\n[bold red]Folder not found.[/bold red]\n")
 
     elif choice.startswith("d "):  # Delete folder or note
       name = choice[2:]
@@ -406,35 +431,11 @@ def run():
       name = choice[2:]
       search(name)
 
-    elif choice.startswith("t "):
-      color = choice[2:]
-      if color == "black":
-        theme_color = 30
-      elif color == "red":
-        theme_color = 31
-      elif color == "green":
-        theme_color = 32
-      elif color == "yellow":
-        theme_color = 33
-      elif color == "blue":
-        theme_color = 34
-      elif color == "magenta":
-        theme_color = 35
-      elif color == "cyan":
-        theme_color = 36
-      elif color == "white":
-        theme_color = 37
-      else:
-        print("\n\033[31mInvalid color.\033[0m\n")
-
-      with open(CONFIG_FILE, "w") as f:
-        json.dump({"theme_color": theme_color}, f)
-
     elif choice == "help":
-      print(f"\n\033[1;{theme_color}mCommands:\n\033[0m\no name - open a folder/note\nnf name - create a new folder\nnn name - create a new note\nd name - delete a folder/note\nl - list folders/notes\nb - back to folders\ne - edit folder/note\ns name - search (case sensitive)\ndn - creates a daily note in the 'daily' folder\nhelp - displays commands\nhelp+ - more specific instructions\nq - quit\n")
+        console.print("\n[bold blue]Commands:[/bold blue]\no [bold]name[/bold] - open a folder/note\nnf [bold]name[/bold] - create a new folder\nnn [bold]name[/bold] - create a new note\nd [bold]name[/bold] - delete a folder/note\nl - list folders/notes\nb - back to folders\ne - edit folder/note\ns [bold]name[/bold] - search (case sensitive)\ndn - creates a daily note in the 'daily' folder\n[bold]help[/bold] - displays commands\n[bold]help+[/bold] - more specific instructions\nq - quit\n")
 
     elif choice == "help+":
-      print(f"\n\033[1;{theme_color}mInstructions:\033[0m\n\n\033[1mo name\033[0m - if you're in the root folder, it opens a folder, if you're in a folder, it opens a note\n\033[1mnf name\033[0m - creates a folder with the given name into the root folder\n\033[1mnn name\033[0m - create a new note with the given name. Must be inside of a folder!\n\033[1mdn\033[0m - creates a new note with the current dater. Adds it to the 'dailys' folder, if not created then it will create it.\n\033[1md name\033[0m - if you're in the root folder, it deletes a folder, if you're in a folder, it deletes a note\n\033[1ml\033[0m - if you're in the root folder, it lists all folders, if you're in a folder, it lists all notes\n\033[1mb\033[0m - takes you back to the root folder\n\033[1me\033[0m - if you're in the root folder, it allows you to edit a folder name, if you're in a folder, it allows you to edit the note name and its contents\n\033[1ms\033[0m - search for folder or note. If found, you can open the folder in which it was found (search is case sensitive)\n(f) - type of (folder)\n(n) - type of (note)\n\033[1mhelp\033[0m - displays commands\n\033[1mhelp+\033[0m - more specific instructions\n\033[1mt color\033[0m - choose a theme color:\nblack\nred\ngreen\nyellow\nblue\nmagenta\ncyan\nwhite\n\033[1mq\033[0m - quits the application\n")
+        console.print("\n[bold blue]Instructions:[/bold blue]\n\n[bold]o name[/bold] - if you're in the root folder, it opens a folder, if you're in a folder, it opens a note\n[bold]nf name[/bold] - creates a folder with the given name into the root folder\n[bold]nn name[/bold] - create a new note with the given name. Must be inside of a folder!\n[bold]dn[/bold] - creates a new note with the current dater. Adds it to the 'dailys' folder, if not created then it will create it.\n[bold]d name[/bold] - if you're in the root folder, it deletes a folder, if you're in a folder, it deletes a note\n[bold]l[/bold] - if you're in the root folder, it lists all folders, if you're in a folder, it lists all notes\n[bold]b[/bold] - takes you back to the root folder\n[bold]e[/bold] - if you're in the root folder, it allows you to edit a folder name, if you're in a folder, it allows you to edit the note name and its contents\n[bold]s name[/bold] - search for folder or note. If found, you can open the folder in which it was found (search is case sensitive)\n([bold]f[/bold]) - type of (folder)\n([bold]n[/bold]) - type of (note)\n[bold]help[/bold] - displays commands\n[bold]help+[/bold] - more specific instructions\n[bold]q[/bold] - quits the application\n") 
 
     elif choice == "q":
       break
@@ -443,7 +444,7 @@ def run():
       if "dailys" not in [f for f in os.listdir(BASE_DIR) if os.path.isdir(os.path.join(BASE_DIR, f))]:
         create_folder("dailys")
       in_folder = "dailys"
-      print(f"\033[32mYou are in 'dailys' folder.\033[0m\n")
+      print(f"[bold green]You are in 'dailys' folder.[/bold green]\n")
       name = datetime.today().strftime('%Y-%m-%d')
       print("Note content (enter 'save' to finish):")
         
@@ -456,4 +457,4 @@ def run():
       create_note(in_folder, name, content)
 
     else:
-      print("\033[31mInvalid command.\033[0m\n")
+      print("[bold red]Invalid command.[/bold red]\n")
