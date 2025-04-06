@@ -81,7 +81,7 @@ def list_folders():
   folders = [f for f in os.listdir(BASE_DIR) if os.path.isdir(os.path.join(BASE_DIR, f))]
 
   if not folders:
-    content = "[dim]└── Create a folder with 'nf name'[/dim]\n"
+    content = "[dim]└── Create a folder with 'nf name'[/dim]"
   else:
     folder_lines = []
     for i, folder in enumerate(folders):
@@ -106,7 +106,7 @@ def list_notes(folder):
   notes = [f.replace(".txt", "") for f in os.listdir(folder_path) if f.endswith(".txt")]
 
   if not notes:
-      content = "[dim]└── Create a note with 'nn name'[/dim]\n"
+      content = "[dim]└── Create a note with 'nn name'[/dim]"
   else:
     note_lines = []
     for i, note in enumerate(notes):
@@ -134,7 +134,7 @@ def create_folder(name):
   else:
     print("\n[bold red]There's already a file with that name.[/bold red]\n")
 
-def create_note(folder, name, content):
+def create_note(folder, name, tags, content):
   """Creates a new note inside a folder."""
   folder_path = os.path.join(BASE_DIR, folder)
   global auto_complete_names
@@ -143,11 +143,18 @@ def create_note(folder, name, content):
     print("\n[bold red]Folder not found. Create the folder first.[/bold red]\n")
     return
 
+  if len(tags) > 0:
+    lines = tags.splitlines()
+    lines_with_tags = [f"#{line}" for line in lines]
+    final_tags = ", ".join(lines_with_tags)
+
   if check_name(name):
     auto_complete_names.append(name)  # Add note name to autocomplete
     update_completer()
     note_path = os.path.join(folder_path, f"{name}.txt")
     with open(note_path, "w") as file:
+      if len(final_tags) > 0:
+        file.write(f"Tags: {final_tags}\n\n")
       file.write(content)
     print(f"\n[bold green]New note '{name}' created in '{folder}'.[/bold green]\n")
   else:
@@ -156,12 +163,12 @@ def create_note(folder, name, content):
 def search(name):
   """Searches for folders or notes and prompts to open."""
   global in_folder #make sure the in_folder is global
+  found_notes = []
 
   found_folders = [
     f for f in os.listdir(BASE_DIR)
     if os.path.isdir(os.path.join(BASE_DIR, f)) and name in f
   ]
-  found_notes = []
 
   for folder in os.listdir(BASE_DIR):
     folder_path = os.path.join(BASE_DIR, folder)
@@ -249,7 +256,7 @@ def delete_note_or_folder(name, is_folder):
           auto_complete_names.remove(name)
           update_completer()
       shutil.rmtree(path)
-      print(f"[bold green]Folder '{name}' deleted.[/bold green]\n")
+      print(f"\n[bold green]Folder '{name}' deleted.[/bold green]\n")
     else:
       print("\n[bold red]Folder not found.[/bold red]\n")
   else:
@@ -259,7 +266,7 @@ def delete_note_or_folder(name, is_folder):
         auto_complete_names.remove(name)
         update_completer()
       os.remove(note_path)
-      print(f"\n[bold red]Note '{name}' deleted.[/bold red]\n")
+      print(f"\n[bold green]Note '{name}' deleted.[/bold green]\n")
     else:
       print("\n\[bold red]Note not found.[/bold red]\n")
 
@@ -411,8 +418,16 @@ def run():
     elif choice.startswith("nn "):  # New note
       if in_folder:
         name = choice[3:]
+
+        print("Note tags (each on a new line, enter 'save' to finish):")
+        tags = ""
+        while True:
+          line = input()
+          if line.lower() == "save":
+            break
+          tags += line + "\n"
+
         print("Note content (enter 'save' to finish):")
-          
         content = ""
         while True:
           line = input()
@@ -420,7 +435,7 @@ def run():
             break
           content += line + "\n"  # Add the line to the note content
         
-        create_note(in_folder, name, content)
+        create_note(in_folder, name, tags, content)
       else:
           print("\nGo into a folder to create a note.\n")
 
