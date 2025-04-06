@@ -155,6 +155,8 @@ def create_note(folder, name, content):
 
 def search(name):
   """Searches for folders or notes and prompts to open."""
+  global in_folder #make sure the in_folder is global
+
   found_folders = [
     f for f in os.listdir(BASE_DIR)
     if os.path.isdir(os.path.join(BASE_DIR, f)) and name in f
@@ -163,6 +165,7 @@ def search(name):
 
   for folder in os.listdir(BASE_DIR):
     folder_path = os.path.join(BASE_DIR, folder)
+    
     if os.path.isdir(folder_path):
       notes = [
         f.replace(".txt", "")
@@ -170,6 +173,7 @@ def search(name):
         if f.endswith(".txt") and name in f
       ]
       found_notes.extend([(folder, note) for note in notes])
+    
 
   if not found_folders and not found_notes:
     console.print("\n[bold red]No matching folders or notes found[/bold red]\n")
@@ -192,17 +196,27 @@ def search(name):
   results_panel = Panel(
     results_content, title="[bold green]Search Results[/bold green]"
   )
+  console.print("\n")
   console.print(results_panel)
 
   choice = Prompt.ask(
-    f"\nType the folder name to open it or 'c' to cancel",
-    default="c",
+    f"\nType 'o' to open the file or 'c' to cancel search"
   )
 
-  if os.path.exists(os.path.join(BASE_DIR, choice)):
-    global in_folder
-    in_folder = choice
-    list_notes(choice)
+  if choice == "o":
+    if found_folders: #check if folders were found
+      for folder in found_folders: #iterate through the folders
+        if os.path.exists(os.path.join(BASE_DIR, folder)):
+          global in_folder
+          in_folder = folder
+          list_notes(in_folder) # list notes in the found folder
+          return # add return here
+    elif found_notes: # check if notes were found
+       for folder, note in found_notes:
+         read_note(folder, note) # open the note
+         in_folder = folder
+         return # add return here
+    
   elif choice.lower() == "c":
     console.print("[bold yellow]\nSearch canceled.[/bold yellow]\n")
   else:
@@ -215,6 +229,7 @@ def read_note(folder, name):
 
   if not os.path.exists(note_path):
     console.print(f"\n[bold red]Note '{name}' not found in '{folder}'.[/bold red]\n")
+    return
 
   with open(note_path, "r") as file:
     content = file.read()
