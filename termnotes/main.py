@@ -145,7 +145,7 @@ def create_note(folder, name, tags, content):
 
   if len(tags) > 0:
     lines = tags.splitlines()
-    lines_with_tags = [f"#{line}" for line in lines]
+    lines_with_tags = [f"[bold pale_violet_red1]#{line}[/bold pale_violet_red1]" for line in lines]
     final_tags = ", ".join(lines_with_tags)
 
   if check_name(name):
@@ -230,7 +230,7 @@ def search(name):
     console.print("[bold red]\nInvalid choice.[/bold red]\n")
 
 def read_note(folder, name):
-  """Reads and displays a note within a Rich Panel (simple version)."""
+  """Reads and displays a note."""
   note_path = os.path.join(BASE_DIR, folder, f"{name}.txt")
   title = f"[bold blue]{name}[/bold blue]"
 
@@ -294,6 +294,90 @@ def edit_note_or_folder(name):
       print(f"\n[bold green]Note renamed to '{new_name}'.[/bold green]\n")
       name = new_name  # Update name
       note_path = new_path  # Update path
+
+    with open(note_path, "r") as f:
+      old_tags_plain = f.readline().strip()
+
+    old_tags_list = []  # Initialize old_tags_list with a default value
+    parts = old_tags_plain.split(": ")
+    if len(parts) > 1:
+      tag_string = parts[1]
+      old_tags_list = [tag.strip().lstrip('#') for tag in tag_string.split(",")]
+    else:
+      print("No tags found in the expected format on the first line.")
+
+    print(f"\n[bold blue]Current tags:[/bold blue]")
+    for i, tag in enumerate(old_tags_list, 1):
+      print(f"{i}: {tag}")
+
+    new_tags = old_tags_list[:]
+
+    while True:
+      command = console.input("[bold blue]\nEnter:[/bold blue]\n'line number' to edit a tag\n'a' to add a tag/tags\n'd + line number' to delete a tag\n'c + line number' to copy a tag\n'save' to save:\n\n[bold blue]cmd: [/bold blue]").strip()
+
+      if command.lower() == "save":
+        break
+      elif command.lower() == "a":
+        print("\nAdd tags (enter 'save' when finished):")
+        while True:
+          new_line = input().strip()
+          if new_line.lower() == "save":
+            break
+          new_tags.append(new_line)  # Append new tags without newline
+      elif command.isdigit():
+        line_number = int(command) - 1
+        if 0 <= line_number < len(new_tags):
+          print(f"Current: {new_tags[line_number].strip()}")
+          new_text = input("Edited tag: ").strip()
+          if new_text:
+            new_tags[line_number] = new_text  # Modify without newline
+        else:
+          print("[bold red]Invalid line number.[/bold red]")
+      elif command.startswith("d ") and command[2:].isdigit():
+        line_number = int(command[2:]) - 1
+        if 0 <= line_number < len(new_tags):
+          del new_tags[line_number]
+          print(f"\n[bold green]Tag {line_number + 1} deleted.[/bold green]")
+        else:
+          print("[bold red]Invalid line number.[/bold red]")
+      elif command.startswith("c ") and command[2:].isdigit():
+        line_number = int(command[2:]) - 1
+        if 0 <= line_number < len(new_tags):
+          copied_line = new_tags[line_number]
+          pyperclip.copy(copied_line)
+          print(f"\n[bold green]Tag nr {line_number + 1} copied to clipboard.[/bold green]")
+        else:
+          print("[bold red]Invalid line number.[/bold red]")
+      else:
+        print("[bold red]Invalid command.[/bold red]")
+
+    if new_tags:
+      processed_tags = []
+      for tag in new_tags:
+        cleaned_tag = tag.strip().replace("#", '')
+        if cleaned_tag:
+          processed_tags.append(f"[bold pale_violet_red1]#{cleaned_tag}[/bold pale_violet_red1]")
+      final_tags = ", ".join(processed_tags)
+    else:
+      final_tags = ""
+
+    with open(note_path, "r") as file:
+      all_lines = file.readlines()
+
+    if all_lines:
+      first_line = all_lines[0].strip()
+      if first_line.startswith("Tags:"):
+        all_lines[0] = f"Tags: {final_tags}\n"
+      else:
+        # Insert tags line at the top if it doesn't exist
+        all_lines.insert(0, f"Tags: {final_tags}\n")
+    else:
+      all_lines = [f"Tags: {final_tags}\n", "\n"]
+
+    with open(note_path, "w") as file:
+      file.writelines(all_lines)
+    
+    print("\n[bold green]Tags updated successfully.[/bold green]\n")
 
     # Step 2: Edit existing content
     with open(note_path, "r") as file:
