@@ -147,6 +147,8 @@ def create_note(folder, name, tags, content):
     lines = tags.splitlines()
     lines_with_tags = [f"[bold pale_violet_red1]#{line}[/bold pale_violet_red1]" for line in lines]
     final_tags = ", ".join(lines_with_tags)
+  else:
+    final_tags = ""
 
   if check_name(name):
     auto_complete_names.append(name)  # Add note name to autocomplete
@@ -155,6 +157,8 @@ def create_note(folder, name, tags, content):
     with open(note_path, "w") as file:
       if len(final_tags) > 0:
         file.write(f"Tags: {final_tags}\n\n")
+      else:
+        file.write("Tags: \n\n")
       file.write(content)
     print(f"\n[bold green]New note '{name}' created in '{folder}'.[/bold green]\n")
   else:
