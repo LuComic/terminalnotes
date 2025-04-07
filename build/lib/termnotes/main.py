@@ -560,6 +560,15 @@ def run():
       in_folder = "dailys"
       print(f"[bold green]You are in 'dailys' folder.[/bold green]\n")
       name = datetime.today().strftime('%Y-%m-%d')
+
+      print("Note tags (each on a new line, enter 'save' to finish):")
+      tags = ""
+      while True:
+        line = input()
+        if line.lower() == "save":
+          break
+        tags += line + "\n"
+
       print("Note content (enter 'save' to finish):")
         
       content = ""
@@ -568,7 +577,7 @@ def run():
         if line.lower() == "save":  # Stop when the user types "done"
           break
         content += line + "\n"  # Add the line to the note content
-      create_note(in_folder, name, content)
+      create_note(in_folder, name, tags, content)
 
     else:
       print("[bold red]Invalid command.[/bold red]\n")
