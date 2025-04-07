@@ -185,7 +185,6 @@ def search(name):
       ]
       found_notes.extend([(folder, note) for note in notes])
     
-
   if not found_folders and not found_notes:
     console.print("\n[bold red]No matching folders or notes found[/bold red]\n")
     return
