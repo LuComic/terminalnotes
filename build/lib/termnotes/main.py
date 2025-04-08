@@ -32,41 +32,7 @@ def check_name(name):
 # Get the system-specific Notes folder
 BASE_DIR = appdirs.user_data_dir("Termnotes", "Termnotes")
 CONFIG_FILE = "config.json"
-auto_complete_names = []
 in_folder = None  # Tracks current folder
-
-# Autocomplete for names
-class MyCompleter(object):  # Custom completer
-
-  def __init__(self, options):
-    self.update_options(options)
-
-  def update_options(self, options):
-    """Update the options and re-sort them."""
-    self.options = sorted(options)
-
-  def complete(self, text, state):
-    if state == 0:  # On first trigger, build possible matches
-      if text:  # Cache matches (entries that start with entered text)
-        self.matches = [s for s in self.options if s and s.startswith(text)]
-      else:  # No text entered, all matches possible
-        self.matches = self.options[:]
-
-      # Return match indexed by state
-      try: 
-        return self.matches[state]
-      except IndexError:
-        return None
-
-# Initialize the completer
-completer = MyCompleter(auto_complete_names)
-readline.set_completer(completer.complete)
-readline.parse_and_bind('tab: complete')
-
-# Now, to update the completer when auto_complete_names changes:
-def update_completer():
-  global completer
-  completer.update_options(auto_complete_names)
 
 # Ensure the directory exists
 os.makedirs(BASE_DIR, exist_ok=True)
@@ -125,19 +91,15 @@ def list_notes(folder):
 def create_folder(name):
   """Creates a new folder inside Notes."""
   folder_path = os.path.join(BASE_DIR, name)
-  global auto_complete_names
   if check_name(name):
     os.makedirs(folder_path, exist_ok=True)
     print(f"\n[bold green]New folder '{name}' created.[/bold green]\n")
-    auto_complete_names.append(name)  # Add folder name to the autocomplete list
-    update_completer()
   else:
     print("\n[bold red]There's already a file with that name.[/bold red]\n")
 
 def create_note(folder, name, tags, content):
   """Creates a new note inside a folder."""
   folder_path = os.path.join(BASE_DIR, folder)
-  global auto_complete_names
 
   if not os.path.exists(folder_path):
     print("\n[bold red]Folder not found. Create the folder first.[/bold red]\n")
@@ -151,8 +113,6 @@ def create_note(folder, name, tags, content):
     final_tags = ""
 
   if check_name(name):
-    auto_complete_names.append(name)  # Add note name to autocomplete
-    update_completer()
     note_path = os.path.join(folder_path, f"{name}.txt")
     with open(note_path, "w") as file:
       if len(final_tags) > 0:
@@ -246,18 +206,20 @@ def search(query):
       console.print("[bold red]\nInvalid choice.[/bold red]\n")
       return
 
+  # Search folders (exact match only)
   found_folders = [
     f for f in os.listdir(BASE_DIR)
-    if os.path.isdir(os.path.join(BASE_DIR, f)) and search_term in f.lower()
+    if os.path.isdir(os.path.join(BASE_DIR, f)) and f.lower() == search_term
   ]
 
+  # Search notes (exact match only)
   for folder in os.listdir(BASE_DIR):
     folder_path = os.path.join(BASE_DIR, folder)
     if os.path.isdir(folder_path):
       notes = [
         (folder, f.replace(".txt", ""))
         for f in os.listdir(folder_path)
-        if f.endswith(".txt") and search_term in f.lower()
+        if f.endswith(".txt") and f.lower().replace('.txt', '') == search_term
       ]
       found_notes_by_name.extend(notes)
 
@@ -328,13 +290,9 @@ def read_note(folder, name):
 def delete_note_or_folder(name, is_folder):
   """Deletes a note or folder."""
   path = os.path.join(BASE_DIR, name)
-  global auto_complete_names
   
   if is_folder:
     if os.path.exists(path) and os.path.isdir(path):
-      if name in auto_complete_names:
-          auto_complete_names.remove(name)
-          update_completer()
       shutil.rmtree(path)
       print(f"\n[bold green]Folder '{name}' deleted.[/bold green]\n")
     else:
@@ -342,9 +300,6 @@ def delete_note_or_folder(name, is_folder):
   else:
     note_path = os.path.join(BASE_DIR, name + ".txt")
     if os.path.exists(note_path):
-      if name in auto_complete_names:
-        auto_complete_names.remove(name)
-        update_completer()
       os.remove(note_path)
       print(f"\n[bold green]Note '{name}' deleted.[/bold green]\n")
     else:
@@ -353,7 +308,6 @@ def delete_note_or_folder(name, is_folder):
 def edit_note_or_folder(name):
   """Edits a note (rename and modify content) or renames a folder."""
   global in_folder
-  global auto_complete_names
 
   if in_folder:  # Editing a note
     note_path = os.path.join(BASE_DIR, in_folder, f"{name}.txt")
@@ -368,10 +322,8 @@ def edit_note_or_folder(name):
 
     if new_name and new_name != name and check_name(new_name):
       new_path = os.path.join(BASE_DIR, in_folder, f"{new_name}.txt")
-      auto_complete_names.remove(name)
-      auto_complete_names.append(new_name)
       os.rename(note_path, new_path)
-      print(f"\n[bold green]Note renamed to '{new_name}'.[/bold green]\n")
+      print(f"\n[bold green]Note renamed to '{new_name}'.[/bold green]")
       name = new_name  # Update name
       note_path = new_path  # Update path
 
@@ -524,11 +476,9 @@ def edit_note_or_folder(name):
     new_name = input().strip()
 
     if new_name and new_name != name and check_name(name):
-      auto_complete_names.remove(name)
-      auto_complete_names.append(new_name)
       new_folder_path = os.path.join(BASE_DIR, new_name)
       os.rename(folder_path, new_folder_path)
-      print(f"\n[bold green]Folder renamed to '{new_name}'.[/bold green]\n")
+      print(f"\n[bold green]Folder renamed to '{new_name}'.[/bold green]")
 
       if in_folder == name:
         in_folder = new_name  # Update reference
