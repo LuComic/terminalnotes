@@ -164,28 +164,104 @@ def create_note(folder, name, tags, content):
   else:
     print("\n[bold red]There's already a file with that name.[/bold red]\n")
 
-def search(name):
-  """Searches for folders or notes and prompts to open."""
-  global in_folder #make sure the in_folder is global
-  found_notes = []
+def extract_tags_from_styled_string(styled_tags_str):
+  """Extracts a list of lowercase tags specifically from '[bold pale_violet_red1]#tag[/bold pale_violet_red1]' format."""
+  tags = []
+  for styled_tag in styled_tags_str.split(','):
+    cleaned_tag = styled_tag.strip()
+    start_bold = cleaned_tag.find("[bold pale_violet_red1]")
+    end_bold = cleaned_tag.find("[/bold pale_violet_red1]")
+
+    if start_bold != -1 and end_bold != -1 and start_bold < end_bold:
+      tag_start = start_bold + len("[bold pale_violet_red1]")
+      extracted_tag = cleaned_tag[tag_start:end_bold].lstrip('#').lower()
+      if extracted_tag:
+        tags.append(extracted_tag)
+    # If the tag doesn't match the expected bold format, you might want to handle it differently
+    # For example, just strip '#' and lowercase if no styling is found.
+    else:
+      cleaned_plain_tag = cleaned_tag.lstrip('#').lower()
+      if cleaned_plain_tag:
+        tags.append(cleaned_plain_tag)
+  return tags
+
+def search(query):
+  """Searches for folders, notes by name, or notes by tags and prompts to open."""
+  global in_folder
+  found_notes_by_name = []
+  found_notes_by_tag = {}
+  search_term = query.lower()
+
+  if query.startswith("#"):
+    tag_to_search = query[1:].strip().lower()
+    for folder in os.listdir(BASE_DIR):
+      folder_path = os.path.join(BASE_DIR, folder)
+      if os.path.isdir(folder_path):
+        for note_file in os.listdir(folder_path):
+          if note_file.endswith(".txt"):
+            note_path = os.path.join(folder_path, note_file)
+            note_name = note_file.replace(".txt", "")
+            with open(note_path, "r") as f:
+              first_line = f.readline().strip()
+              if first_line.lower().startswith("tags:"):
+                tags_str = first_line[len("tags:"):].strip()
+                note_tags = extract_tags_from_styled_string(tags_str) # Use the specific extraction
+                if tag_to_search in note_tags:
+                  if note_name not in found_notes_by_tag:
+                    found_notes_by_tag[note_name] = folder
+
+  if found_notes_by_tag:
+    results_content = "[bold blue]Notes found by tag:[/bold blue]\n"
+    tag_items = list(found_notes_by_tag.items())
+    for i, (name, folder) in enumerate(tag_items):
+      if i == len(tag_items) - 1:
+        results_content += f"└── [bold]{folder}/{name}[/bold] (n)"
+      else:
+        results_content += f"├── [bold]{folder}/{name}[/bold] (n)\n"
+    results_panel = Panel(results_content, title="[bold green]Tag Search Results[/bold green]")
+    console.print("\n")
+    console.print(results_panel)
+    choice = Prompt.ask("\nType 'o + note name' to open or 'c' to cancel").strip().lower()
+    if choice != 'c' and choice.startswith('o '):
+      name = choice[2:]
+      if len(name) > 0:
+        folder_to_open = ""
+        for search_name, folder in found_notes_by_tag.items():
+          if search_name == name:
+            folder_to_open += folder
+        if os.path.exists(os.path.join(BASE_DIR, folder_to_open, f"{name}.txt")):
+          read_note(folder_to_open, name)
+          in_folder = folder_to_open
+          return
+        else:
+          console.print("\n[bold red]Note not found in the specified folder.[/bold red]\n")
+          return
+      else:
+        console.print("\n[bold red]Invalid open format.[/bold red]\n")
+        return
+    elif choice == 'c':
+      console.print("[bold yellow]\nSearch canceled.[/bold yellow]\n")
+      return
+    else:
+      console.print("[bold red]\nInvalid choice.[/bold red]\n")
+      return
 
   found_folders = [
     f for f in os.listdir(BASE_DIR)
-    if os.path.isdir(os.path.join(BASE_DIR, f)) and name in f
+    if os.path.isdir(os.path.join(BASE_DIR, f)) and search_term in f.lower()
   ]
 
   for folder in os.listdir(BASE_DIR):
     folder_path = os.path.join(BASE_DIR, folder)
-    
     if os.path.isdir(folder_path):
       notes = [
-        f.replace(".txt", "")
+        (folder, f.replace(".txt", ""))
         for f in os.listdir(folder_path)
-        if f.endswith(".txt") and name in f
+        if f.endswith(".txt") and search_term in f.lower()
       ]
-      found_notes.extend([(folder, note) for note in notes])
-    
-  if not found_folders and not found_notes:
+      found_notes_by_name.extend(notes)
+
+  if not found_folders and not found_notes_by_name:
     console.print("\n[bold red]No matching folders or notes found[/bold red]\n")
     return
 
@@ -194,12 +270,12 @@ def search(name):
     search_results.append("[bold blue]Folder:[/bold blue]")
     for folder in found_folders:
       search_results.append(f"├── [bold]{folder}[/bold] (f)")
-  if found_notes:
+  if found_notes_by_name:
     if found_folders:
       search_results.append("\n[bold blue]Note:[/bold blue]")
     else:
       search_results.append("[bold blue]Note:[/bold blue]")
-    for folder, note in found_notes:
+    for folder, note in found_notes_by_name:
       search_results.append(f"└── [bold]{folder}/{note}[/bold] (n)")
 
   results_content = "\n".join(search_results)
@@ -210,24 +286,25 @@ def search(name):
   console.print(results_panel)
 
   choice = Prompt.ask(
-    f"\nType 'o' to open the file or 'c' to cancel search"
-  )
+    f"\nType 'o' to open or 'c' to cancel search"
+  ).lower()
 
   if choice == "o":
-    if found_folders: #check if folders were found
-      for folder in found_folders: #iterate through the folders
-        if os.path.exists(os.path.join(BASE_DIR, folder)):
-          global in_folder
-          in_folder = folder
-          list_notes(in_folder) # list notes in the found folder
-          return # add return here
-    elif found_notes: # check if notes were found
-       for folder, note in found_notes:
-         read_note(folder, note) # open the note
-         in_folder = folder
-         return # add return here
-    
-  elif choice.lower() == "c":
+    if len(found_folders) == 1 and not found_notes_by_name:
+      folder_to_open = found_folders[0]
+      if os.path.exists(os.path.join(BASE_DIR, folder_to_open)):
+        in_folder = folder_to_open
+        list_notes(in_folder)
+        return
+    elif not found_folders and len(found_notes_by_name) == 1:
+      folder, note_to_open = found_notes_by_name[0]
+      read_note(folder, note_to_open)
+      in_folder = folder
+      return
+    elif found_folders or found_notes_by_name:
+      print("\n[bold yellow]Multiple results found. Please be more specific or use 'o folder/note_name'[/bold yellow]\n")
+      return
+  elif choice == "c":
     console.print("[bold yellow]\nSearch canceled.[/bold yellow]\n")
   else:
     console.print("[bold red]\nInvalid choice.[/bold red]\n")
@@ -301,11 +378,12 @@ def edit_note_or_folder(name):
     with open(note_path, "r") as f:
       old_tags_plain = f.readline().strip()
 
-    old_tags_list = []  # Initialize old_tags_list with a default value
+    # Use extract_tags_from_styled_string to get clean tags
+    old_tags_list = []
     parts = old_tags_plain.split(": ")
     if len(parts) > 1:
       tag_string = parts[1]
-      old_tags_list = [tag.strip().lstrip('#') for tag in tag_string.split(",")]
+      old_tags_list = extract_tags_from_styled_string(tag_string)
     else:
       print("No tags found in the expected format on the first line.")
 
@@ -354,6 +432,7 @@ def edit_note_or_folder(name):
       else:
         print("[bold red]Invalid command.[/bold red]")
 
+    # Format tags for output
     if new_tags:
       processed_tags = []
       for tag in new_tags:
@@ -372,8 +451,7 @@ def edit_note_or_folder(name):
       if first_line.startswith("Tags:"):
         all_lines[0] = f"Tags: {final_tags}\n"
       else:
-        # Insert tags line at the top if it doesn't exist
-        all_lines.insert(0, f"Tags: {final_tags}\n")
+        all_lines.insert(0, f"Tags: {final_tags}\n\n")
     else:
       all_lines = [f"Tags: {final_tags}\n", "\n"]
 
@@ -381,7 +459,6 @@ def edit_note_or_folder(name):
       file.writelines(all_lines)
     
     print("\n[bold green]Tags updated successfully.[/bold green]\n")
-
     # Step 2: Edit existing content
     with open(note_path, "r") as file:
       old_content = file.readlines()
@@ -583,4 +660,4 @@ def run():
       create_note(in_folder, name, tags, content)
 
     else:
-      print("[bold red]Invalid command.[/bold red]\n")
+      print("\n[bold red]Invalid command.[/bold red]\n")
