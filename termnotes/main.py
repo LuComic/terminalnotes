@@ -183,18 +183,46 @@ def search(query):
     console.print(results_panel)
     choice = Prompt.ask("\nType 'o + note name' to open or 'c' to cancel").strip().lower()
     if choice != 'c' and choice.startswith('o '):
-      name = choice[2:]
+      name = choice[2:].strip()
       if len(name) > 0:
         folder_to_open = ""
+        exact_match = False
+        # First try exact matches
         for search_name, folder in found_notes_by_tag.items():
-          if search_name == name:
-            folder_to_open += folder
-        if os.path.exists(os.path.join(BASE_DIR, folder_to_open, f"{name}.txt")):
-          read_note(folder_to_open, name)
-          in_folder = folder_to_open
-          return
+          if search_name.lower() == name.lower():
+            folder_to_open = folder
+            name = search_name  # Use the actual case from the filename
+            exact_match = True
+            break
+            
+        # If no exact match, try partial matches
+        if not exact_match:
+          matches = []
+          for search_name, folder in found_notes_by_tag.items():
+            if name.lower() in search_name.lower():
+              matches.append((search_name, folder))
+                
+          # If we have just one match, use it
+          if len(matches) == 1:
+            name, folder_to_open = matches[0]
+          # If multiple matches, ask the user to be more specific
+          elif len(matches) > 1:
+            console.print("\n[bold yellow]Multiple matches found:[/bold yellow]")
+            for i, (match_name, match_folder) in enumerate(matches):
+              console.print(f"{i+1}: {match_folder}/{match_name}")
+            console.print("\n[bold yellow]Please use more specific name or full note name.[/bold yellow]\n")
+            return
+                
+        if folder_to_open:
+          if os.path.exists(os.path.join(BASE_DIR, folder_to_open, f"{name}.txt")):
+            read_note(folder_to_open, name)
+            in_folder = folder_to_open
+            return
+          else:
+            console.print("\n[bold red]Note not found in the specified folder.[/bold red]\n")
+            return
         else:
-          console.print("\n[bold red]Note not found in the specified folder.[/bold red]\n")
+          console.print("\n[bold red]No note found matching that name.[/bold red]\n")
           return
       else:
         console.print("\n[bold red]Invalid open format.[/bold red]\n")
@@ -498,7 +526,7 @@ def run():
   |__/|__/\___/_/\___/\____/_/ /_/ /_/\___/   \__/\____/ 
     / /____  _________ ___  ____  ____  / /____  _____   
   / __/ _ \/ ___/ __ `__ \/ __ \/ __ \/ __/ _ \/ ___/   
-  / /_/  __/ /  / / / / / / / / / /_/ / /_/  __(__  )    
+  / /_/  __/ /  / / / / / / / / /_/ / /_/  __(__  )    
   \__/\___/_/  /_/ /_/ /_/_/ /_/\____/\__/\___/____/     
   """)
   print("Get started by entering 'help' for commands.\n")
