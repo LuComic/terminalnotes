@@ -302,7 +302,7 @@ def search(query):
 def read_note(folder, name):
   """Reads and displays a note."""
   note_path = os.path.join(BASE_DIR, folder, f"{name}.txt")
-  title = f"[bold blue]{name}[/bold blue]"
+  word_count = 0
 
   if not os.path.exists(note_path):
     console.print(f"\n[bold red]Note '{name}' not found in '{folder}'.[/bold red]\n")
@@ -310,6 +310,15 @@ def read_note(folder, name):
 
   with open(note_path, "r") as file:
     content = file.read()
+    lines = content.split('\n')
+    words = []
+    for line in lines[1:]:
+      for word in line.split():
+        words.append(word)
+    word_count = len(words)
+
+  title = f"[bold blue]{name} | {word_count} words[/bold blue]"
+
   panel = Panel("\n" + content, title=title)
   console.print("\n")
   console.print(panel)
