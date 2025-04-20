@@ -60,17 +60,9 @@ def list_folders():
   inner_panel = Panel(content, title="[bold blue]Folders[/bold blue]", expand=True)  # Customize title color
   empty_panel = Panel("Nothing open", title="", expand=True)
 
-  inner_columns = Columns(
-    [inner_panel, empty_panel],
-    equal=True,
-    expand=True,
-    width=None  # Allow panels to take full width
-  )
-
-  outer_panel = Panel(inner_columns, title="[spring_green1 bold]Termnotes[/spring_green1 bold]")
-
   console.print("\n")
-  console.print(outer_panel)
+  console.print(inner_panel)
+  console.print(empty_panel)
   console.print("\n")
 
 def list_notes(folder):
@@ -108,17 +100,9 @@ def list_notes(folder):
   panel_title = f"[bold blue]{folder}[/bold blue]"  # Customize title color
   folder_panel = Panel(content, title=panel_title, expand=True)
 
-  inner_columns = Columns(
-    [all_folders_panel, folder_panel],
-    equal=True,
-    expand=True,
-    width=None  # Allow panels to take full width
-  )
-
-  outer_panel = Panel(inner_columns, title="[spring_green1 bold]Termnotes[/spring_green1 bold]")
-
   console.print("\n")
-  console.print(outer_panel)
+  console.print(all_folders_panel)
+  console.print(folder_panel)
   console.print("\n")
 
 def create_folder(name):
@@ -370,16 +354,9 @@ def read_note(folder, name):
 
   note_panel = Panel("\n" + content, title=title, expand=True)
 
-  inner_columns = Columns(
-    [folder_panel, note_panel],
-    equal=True,
-    expand=True
-  )
-
-  outer_panel = Panel(inner_columns, title="[spring_green1 bold]Termnotes[/spring_green1 bold]")
-
   console.print("\n")
-  console.print(outer_panel)
+  console.print(folder_panel)
+  console.print(note_panel)
   console.print("\n")
 
 
@@ -580,22 +557,21 @@ def edit_note_or_folder(name):
         in_folder = new_name  # Update reference
 
 
-
 def run():
   # Initialize storage
   setup()
   global in_folder
 
   print(r"""
-  _       __     __                             __      
-  | |     / /__  / /________  ____ ___  ___     / /_____ 
-  | | /| / / _ \/ / ___/ __ \/ __ `__ \/ _ \   / __/ __ \
-  | |/ |/ /  __/ / /__/ /_/ / / / / / /  __/  / /_/ /_/ /
-  |__/|__/\___/_/\___/\____/_/ /_/ /_/\___/   \__/\____/ 
-    / /____  _________ ___  ____  ____  / /____  _____   
-  / __/ _ \/ ___/ __ `__ \/ __ \/ __ \/ __/ _ \/ ___/   
-  / /_/  __/ /  / / / / / / / / /_/ / /_/  __(__  )    
-  \__/\___/_/  /_/ /_/ /_/_/ /_/\____/\__/\___/____/     
+ __        __   _                            _        
+ \ \      / /__| | ___ ___  _ __ ___   ___  | |_ ___  
+  \ \ /\ / / _ \ |/ __/ _ \| '_ ` _ \ / _ \ | __/ _ \ 
+   \ V  V /  __/ | (_| (_) | | | | | |  __/ | || (_) |
+  _ \_/\_/ \___|_|\___\___/|_| |_| |_|\___|  \__\___/ 
+ | |_ ___ _ __ _ __ ___  _ __   ___ | |_ ___  ___     
+ | __/ _ \ '__| '_ ` _ \| '_ \ / _ \| __/ _ \/ __|    
+ | ||  __/ |  | | | | | | | | | (_) | ||  __/\__ \    
+  \__\___|_|  |_| |_| |_|_| |_|\___/ \__\___||___/    
   """)
   print("Get started by entering 'help' for commands.\n")
   list_folders()
