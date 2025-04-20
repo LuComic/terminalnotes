@@ -10,7 +10,7 @@ from rich import print
 from rich.panel import Panel
 from rich.console import Console
 from rich.prompt import Prompt
-from rich.text import Text
+from rich.columns import Columns
 
 console = Console()
 
@@ -57,9 +57,20 @@ def list_folders():
         folder_lines.append(f"[bold]{folder}[/bold] (f)")
     content = "\n".join([f"├── {line}" for line in folder_lines[:-1]] + [f"└── {folder_lines[-1]}"])
 
-  panel = Panel(content, title="[bold blue]Folders[/bold blue]")  # Customize title color
+  inner_panel = Panel(content, title="[bold blue]Folders[/bold blue]", expand=True)  # Customize title color
+  empty_panel = Panel("Nothing open", title="", expand=True)
+
+  inner_columns = Columns(
+    [inner_panel, empty_panel],
+    equal=True,
+    expand=True,
+    width=None  # Allow panels to take full width
+  )
+
+  outer_panel = Panel(inner_columns, title="[spring_green1 bold]Termnotes[/spring_green1 bold]")
+
   console.print("\n")
-  console.print(panel)
+  console.print(outer_panel)
   console.print("\n")
 
 def list_notes(folder):
@@ -82,10 +93,32 @@ def list_notes(folder):
         note_lines.append(f"[bold]{note}[/bold] (n)")
     content = "\n".join([f"├── {line}" for line in note_lines[:-1]] + [f"└── {note_lines[-1]}"])
 
+  folders = [f for f in os.listdir(BASE_DIR) if os.path.isdir(os.path.join(BASE_DIR, f))]
+
+  folder_lines = []
+  for i, some_folder in enumerate(folders):
+    if i == len(folders) - 1:  # Last item in the list
+      folder_lines.append(f"[bold]{some_folder}[/bold] (f)")
+    else:
+      folder_lines.append(f"[bold]{some_folder}[/bold] (f)")
+  folder_content = "\n".join([f"├── {line}" for line in folder_lines[:-1]] + [f"└── {folder_lines[-1]}"])
+
+  all_folders_panel = Panel(folder_content, title="[bold blue]Folders[/bold blue]", expand=True)  # Customize title color 
+
   panel_title = f"[bold blue]{folder}[/bold blue]"  # Customize title color
-  panel = Panel(content, title=panel_title)
+  folder_panel = Panel(content, title=panel_title, expand=True)
+
+  inner_columns = Columns(
+    [all_folders_panel, folder_panel],
+    equal=True,
+    expand=True,
+    width=None  # Allow panels to take full width
+  )
+
+  outer_panel = Panel(inner_columns, title="[spring_green1 bold]Termnotes[/spring_green1 bold]")
+
   console.print("\n")
-  console.print(panel)
+  console.print(outer_panel)
   console.print("\n")
 
 def create_folder(name):
@@ -319,10 +352,36 @@ def read_note(folder, name):
 
   title = f"[bold blue]{name} | {word_count} words[/bold blue]"
 
-  panel = Panel("\n" + content, title=title)
+  folder_path = os.path.join(BASE_DIR, folder)
+
+  notes = [f.replace(".txt", "") for f in os.listdir(folder_path) if f.endswith(".txt")]
+
+  note_lines = []
+  for i, note in enumerate(notes):
+    if i == len(notes) - 1:
+      note_lines.append(f"[bold]{note}[/bold] (n)")
+    else:
+      note_lines.append(f"[bold]{note}[/bold] (n)")
+  folder_content = "\n".join([f"├── {line}" for line in note_lines[:-1]] + [f"└── {note_lines[-1]}"])
+
+  folder_title = f"[bold blue]{folder}[/bold blue]"
+
+  folder_panel = Panel(folder_content, title=folder_title, expand=True)  # Customize title color 
+
+  note_panel = Panel("\n" + content, title=title, expand=True)
+
+  inner_columns = Columns(
+    [folder_panel, note_panel],
+    equal=True,
+    expand=True
+  )
+
+  outer_panel = Panel(inner_columns, title="[spring_green1 bold]Termnotes[/spring_green1 bold]")
+
   console.print("\n")
-  console.print(panel)
+  console.print(outer_panel)
   console.print("\n")
+
 
 def delete_note_or_folder(name, is_folder):
   """Deletes a note or folder."""
