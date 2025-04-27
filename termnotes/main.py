@@ -317,7 +317,7 @@ def search(query):
     console.print("[bold red]\nInvalid choice.[/bold red]\n")
 
 def read_note(folder, name):
-  """Reads and displays a note."""
+  """Reads and displays a note with bold Markdown headings."""
   note_path = os.path.join(BASE_DIR, folder, f"{name}.txt")
   word_count = 0
 
@@ -331,15 +331,24 @@ def read_note(folder, name):
     words = []
     for line in lines[1:]:
       for word in line.split():
-        words.append(word)
+          words.append(word)
+
+    modified_lines = []
+    for line in lines:
+      if line.startswith("#"):
+        # Replace Markdown heading with rich's bold markup
+        modified_line = f"[bold]{line.lstrip("#").strip()}[/bold]"
+        modified_lines.append(modified_line)
+      else:
+        modified_lines.append(line)
+
+    content = "\n".join(modified_lines)  # Join the modified lines back into content
     word_count = len(words)
 
   title = f"[bold blue]{name} | {word_count} words[/bold blue]"
 
   folder_path = os.path.join(BASE_DIR, folder)
-
   notes = [f.replace(".txt", "") for f in os.listdir(folder_path) if f.endswith(".txt")]
-
   note_lines = []
   for i, note in enumerate(notes):
     if i == len(notes) - 1:
@@ -347,18 +356,14 @@ def read_note(folder, name):
     else:
       note_lines.append(f"[bold]{note}[/bold] (n)")
   folder_content = "\n".join([f"├── {line}" for line in note_lines[:-1]] + [f"└── {note_lines[-1]}"])
-
   folder_title = f"[bold blue]{folder}[/bold blue]"
-
-  folder_panel = Panel(folder_content, title=folder_title, expand=True)  # Customize title color 
-
+  folder_panel = Panel(folder_content, title=folder_title, expand=True)
   note_panel = Panel("\n" + content, title=title, expand=True)
 
   console.print("\n")
   console.print(folder_panel)
   console.print(note_panel)
   console.print("\n")
-
 
 def delete_note_or_folder(name, is_folder):
   """Deletes a note or folder."""
@@ -376,7 +381,7 @@ def delete_note_or_folder(name, is_folder):
       os.remove(note_path)
       print(f"\n[bold green]Note '{name}' deleted.[/bold green]\n")
     else:
-      print("\n\[bold red]Note not found.[/bold red]\n")
+      print("\n[bold red]Note not found.[/bold red]\n")
 
 def edit_note_or_folder(name):
   """Edits a note (rename and modify content) or renames a folder."""

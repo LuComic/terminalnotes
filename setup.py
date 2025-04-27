@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="termnotes",  # This is your package name
-    version="12.6",
+    version="12.8",
     packages=find_packages(),
     install_requires=[
         "termcolor",  # Add any dependencies you need here
