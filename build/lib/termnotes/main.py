@@ -10,7 +10,6 @@ from rich import print
 from rich.panel import Panel
 from rich.console import Console
 from rich.prompt import Prompt
-from rich.columns import Columns
 
 console = Console()
 
@@ -18,7 +17,7 @@ console = Console()
 def check_name(name):
   found_folders = [f for f in os.listdir(BASE_DIR) if os.path.isdir(os.path.join(BASE_DIR, f)) and name in f]
   found_notes = []
-  
+
   for folder in os.listdir(BASE_DIR):
     folder_path = os.path.join(BASE_DIR, folder)
     if os.path.isdir(folder_path):
@@ -71,7 +70,7 @@ def list_notes(folder):
   if not os.path.exists(folder_path):
     print("\n[bold red]Folder not found.[/bold red]\n")
     return
-  
+
   notes = [f.replace(".txt", "") for f in os.listdir(folder_path) if f.endswith(".txt")]
 
   if not notes:
@@ -95,7 +94,7 @@ def list_notes(folder):
       folder_lines.append(f"[bold]{some_folder}[/bold] (f)")
   folder_content = "\n".join([f"├── {line}" for line in folder_lines[:-1]] + [f"└── {folder_lines[-1]}"])
 
-  all_folders_panel = Panel(folder_content, title="[bold blue]Folders[/bold blue]", expand=True)  # Customize title color 
+  all_folders_panel = Panel(folder_content, title="[bold blue]Folders[/bold blue]", expand=True)  # Customize title color
 
   panel_title = f"[bold blue]{folder}[/bold blue]"  # Customize title color
   folder_panel = Panel(content, title=panel_title, expand=True)
@@ -211,14 +210,14 @@ def search(query):
             name = search_name  # Use the actual case from the filename
             exact_match = True
             break
-            
+
         # If no exact match, try partial matches
         if not exact_match:
           matches = []
           for search_name, folder in found_notes_by_tag.items():
             if name.lower() in search_name.lower():
               matches.append((search_name, folder))
-                
+
           # If we have just one match, use it
           if len(matches) == 1:
             name, folder_to_open = matches[0]
@@ -229,7 +228,7 @@ def search(query):
               console.print(f"{i+1}: {match_folder}/{match_name}")
             console.print("\n[bold yellow]Please use more specific name or full note name.[/bold yellow]\n")
             return
-                
+
         if folder_to_open:
           if os.path.exists(os.path.join(BASE_DIR, folder_to_open, f"{name}.txt")):
             read_note(folder_to_open, name)
@@ -339,6 +338,12 @@ def read_note(folder, name):
         # Replace Markdown heading with rich's bold markup
         modified_line = f"[bold]{line.lstrip("#").strip()}[/bold]"
         modified_lines.append(modified_line)
+      elif line.startswith("- [ ]"):
+          modified_line = f"[bold red]- [/bold red]{line.lstrip("- [ ]").strip()}"
+          modified_lines.append(modified_line)
+      elif line.startswith("- [ + ]"):
+          modified_line = f"[bold green]+ [/bold green]{line.lstrip("- [ + ]").strip()}"
+          modified_lines.append(modified_line) 
       else:
         modified_lines.append(line)
 
@@ -368,7 +373,7 @@ def read_note(folder, name):
 def delete_note_or_folder(name, is_folder):
   """Deletes a note or folder."""
   path = os.path.join(BASE_DIR, name)
-  
+
   if is_folder:
     if os.path.exists(path) and os.path.isdir(path):
       shutil.rmtree(path)
@@ -487,7 +492,7 @@ def edit_note_or_folder(name):
 
     with open(note_path, "w") as file:
       file.writelines(all_lines)
-    
+
     print("\n[bold green]Tags updated successfully.[/bold green]\n")
     # Step 2: Edit existing content
     with open(note_path, "r") as file:
@@ -541,7 +546,7 @@ def edit_note_or_folder(name):
     # Save updated content
     with open(note_path, "w") as file:
       file.writelines(new_content)
-    
+
     print("\n[bold green]Note updated successfully.[/bold green]\n")
 
   else:  # Renaming a folder
@@ -568,15 +573,15 @@ def run():
   global in_folder
 
   print(r"""
- __        __   _                            _        
- \ \      / /__| | ___ ___  _ __ ___   ___  | |_ ___  
-  \ \ /\ / / _ \ |/ __/ _ \| '_ ` _ \ / _ \ | __/ _ \ 
+ __        __   _                            _
+ \ \      / /__| | ___ ___  _ __ ___   ___  | |_ ___
+  \ \ /\ / / _ \ |/ __/ _ \| '_ ` _ \ / _ \ | __/ _ \
    \ V  V /  __/ | (_| (_) | | | | | |  __/ | || (_) |
-  _ \_/\_/ \___|_|\___\___/|_| |_| |_|\___|  \__\___/ 
- | |_ ___ _ __ _ __ ___  _ __   ___ | |_ ___  ___     
- | __/ _ \ '__| '_ ` _ \| '_ \ / _ \| __/ _ \/ __|    
- | ||  __/ |  | | | | | | | | | (_) | ||  __/\__ \    
-  \__\___|_|  |_| |_| |_|_| |_|\___/ \__\___||___/    
+  _ \_/\_/ \___|_|\___\___/|_| |_| |_|\___|  \__\___/
+ | |_ ___ _ __ _ __ ___  _ __   ___ | |_ ___  ___
+ | __/ _ \ '__| '_ ` _ \| '_ \ / _ \| __/ _ \/ __|
+ | ||  __/ |  | | | | | | | | | (_) | ||  __/\__ \
+  \__\___|_|  |_| |_| |_|_| |_|\___/ \__\___||___/
   """)
   print("Get started by entering 'help' for commands.\n")
   list_folders()
@@ -625,7 +630,7 @@ def run():
           if line.lower() == "save":  # Stop when the user types "done"
             break
           content += line + "\n"  # Add the line to the note content
-        
+
         create_note(in_folder, name, tags, content)
       else:
           print("\nGo into a folder to create a note.\n")
@@ -656,7 +661,7 @@ def run():
         console.print("\n[bold blue]Commands:[/bold blue]\n\no [bold]name[/bold] - open a folder/note\nnf [bold]name[/bold] - create a new folder\nnn [bold]name[/bold] - create a new note\nd [bold]name[/bold] - delete a folder/note\nl - list folders/notes\nb - back to folders\ne name - edit folder/note\ns [bold]name[/bold] - search\ndn - creates a daily note in the 'dailys' folder\n[bold]help[/bold] - displays commands\n[bold]help+[/bold] - more specific instructions\nq - quit\n")
 
     elif choice == "help+":
-        console.print("\n[bold blue]Instructions:[/bold blue]\n\n[bold]o name[/bold] - if you're in the root folder, it opens a folder, if you're in a folder, it opens a note\n[bold]nf name[/bold] - creates a folder with the given name into the root folder\n[bold]nn name[/bold] - create a new note with the given name. Must be inside of a folder!\n[bold]dn[/bold] - creates a new note with the current dater. Adds it to the 'dailys' folder, if not created then it will create it.\n[bold]d name[/bold] - if you're in the root folder, it deletes a folder, if you're in a folder, it deletes a note\n[bold]l[/bold] - if you're in the root folder, it lists all folders, if you're in a folder, it lists all notes\n[bold]b[/bold] - takes you back to the root folder\n[bold]e name[/bold] - if you're in the root folder, it allows you to edit a folder name, if you're in a folder, it allows you to edit the note name and its contents\n[bold]s name[/bold] - search for folder or note. If found, you can open the folder in which it was found (search is case sensitive)\n([bold]f[/bold]) - type of (folder)\n([bold]n[/bold]) - type of (note)\n[bold]help[/bold] - displays commands\n[bold]help+[/bold] - more specific instructions\n[bold]q[/bold] - quits the application\n") 
+        console.print("\n[bold blue]Instructions:[/bold blue]\n\n[bold]o name[/bold] - if you're in the root folder, it opens a folder, if you're in a folder, it opens a note\n[bold]nf name[/bold] - creates a folder with the given name into the root folder\n[bold]nn name[/bold] - create a new note with the given name. Must be inside of a folder!\n[bold]dn[/bold] - creates a new note with the current dater. Adds it to the 'dailys' folder, if not created then it will create it.\n[bold]d name[/bold] - if you're in the root folder, it deletes a folder, if you're in a folder, it deletes a note\n[bold]l[/bold] - if you're in the root folder, it lists all folders, if you're in a folder, it lists all notes\n[bold]b[/bold] - takes you back to the root folder\n[bold]e name[/bold] - if you're in the root folder, it allows you to edit a folder name, if you're in a folder, it allows you to edit the note name and its contents\n[bold]s name[/bold] - search for folder or note. If found, you can open the folder in which it was found (search is case sensitive)\n([bold]f[/bold]) - type of (folder)\n([bold]n[/bold]) - type of (note)\n[bold]help[/bold] - displays commands\n[bold]help+[/bold] - more specific instructions\n[bold]q[/bold] - quits the application\n")
 
     elif choice == "q":
       break
@@ -677,7 +682,7 @@ def run():
         tags += line + "\n"
 
       print("Note content (enter 'save' to finish):")
-        
+
       content = ""
       while True:
         line = input()
