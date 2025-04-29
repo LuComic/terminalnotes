@@ -338,11 +338,11 @@ def read_note(folder, name):
         # Replace Markdown heading with rich's bold markup
         modified_line = f"[bold]{line.lstrip("#").strip()}[/bold]"
         modified_lines.append(modified_line)
-      elif line.startswith("-[ ]"):
-        modified_line = f"[bold red]- [/bold red]{line.lstrip("-[ ]").strip()}"
+      elif line.startswith("-[]"):
+        modified_line = f"[bold red]- [/bold red]{line.lstrip("-[]").strip()}"
         modified_lines.append(modified_line)
-      elif line.startswith("-[ x ]"):
-        modified_line = f"[bold green]+ [/bold green]{line.lstrip("-[ x ]").strip()}"
+      elif line.startswith("-[x]"):
+        modified_line = f"[bold green]+ [/bold green]{line.lstrip("-[x]").strip()}"
         modified_lines.append(modified_line)
       elif line.startswith("- "):
         modified_line = f"\t• {line.lstrip("- ").strip()}"
