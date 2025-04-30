@@ -569,6 +569,31 @@ def edit_note_or_folder(name):
       if in_folder == name:
         in_folder = new_name  # Update reference
 
+def move_note_or_folder(source, destination):
+  """Moves a note or folder to a new destination."""
+  # Resolve source and destination paths relative to BASE_DIR
+  if source.endswith(".txt") is False:
+    source = f"{source}.txt"
+  source_path = os.path.abspath(os.path.join(BASE_DIR, source.strip()))
+  destination_path = os.path.abspath(os.path.join(BASE_DIR, destination.strip()))
+
+  # Check if the source exists
+  if not os.path.exists(source_path):
+    print(f"\n[bold red]Source '{source}' not found.[/bold red]\n")
+    return
+
+  # Check if the destination is a valid folder
+  if not os.path.exists(destination_path) or not os.path.isdir(destination_path):
+    print(f"\n[bold red]Destination folder '{destination}' not found.[/bold red]\n")
+    return
+
+  try:
+    # Perform the move operation
+    shutil.move(source_path, destination_path)
+    print(f"\n[bold green]'{source}' moved to '{destination}'.[/bold green]\n")
+  except Exception as e:
+    print(f"\n[bold red]Error moving: {e}[/bold red]\n")
+
 
 def run():
   # Initialize storage
@@ -586,8 +611,29 @@ def run():
  | ||  __/ |  | | | | | | | | | (_) | ||  __/\__ \
   \__\___|_|  |_| |_| |_|_| |_|\___/ \__\___||___/
   """)
-  print("Get started by entering 'help' for commands.\n")
-  list_folders()
+  print("'Help' for commands.")
+  quick_note_opened = False
+  if quick_note_opened is False:
+    if "quick_notes" not in [f for f in os.listdir(BASE_DIR) if os.path.isdir(os.path.join(BASE_DIR, f))]:
+      create_folder("quick_notes")
+    in_folder = "quick_notes"
+    list_notes(in_folder)
+    name = f'{datetime.strftime(datetime.now(), "%d.%m.%y-%H:%M")}'
+    tags = ""
+
+    print("Note content (enter 'save' to finish or 'exit' to discard note):")
+    content = ""
+    while True:
+      line = input()
+      if line.lower() == "save":  # Stop when the user types "done"
+        create_note(in_folder, name, tags, content)
+        break
+      elif line.lower() == "exit":
+        console.print("\n[bold yellow]Note discarded[/bold yellow]\n")
+        break
+      content += line + "\n"  # Add the line to the note content
+
+    quick_note_opened = True
 
   while True:
     choice = console.input("[bold blue]cmd: [/bold blue]").strip()
@@ -626,18 +672,20 @@ def run():
             break
           tags += line + "\n"
 
-        print("Note content (enter 'save' to finish):")
+        print("Note content (enter 'save' to finish or 'exit' to discard note):")
         content = ""
         while True:
           line = input()
           if line.lower() == "save":  # Stop when the user types "done"
+            create_note(in_folder, name, tags, content)
+            break
+          elif line.lower() == "exit":
+            console.print("\n[bold yellow]Note discarded[/bold yellow]\n")
             break
           content += line + "\n"  # Add the line to the note content
 
-        create_note(in_folder, name, tags, content)
       else:
           print("\nGo into a folder to create a note.\n")
-
 
     elif choice == "l":  # List folders or notes
       if in_folder:
@@ -661,13 +709,16 @@ def run():
       search(name)
 
     elif choice == "help":
-        console.print("\n[bold blue]Commands:[/bold blue]\n\no [bold]name[/bold] - open a folder/note\nnf [bold]name[/bold] - create a new folder\nnn [bold]name[/bold] - create a new note\nd [bold]name[/bold] - delete a folder/note\nl - list folders/notes\nb - back to folders\ne name - edit folder/note\ns [bold]name[/bold] - search\ndn - creates a daily note in the 'dailys' folder\n[bold]help[/bold] - displays commands\n[bold]help+[/bold] - more specific instructions\nq - quit\n")
+        console.print("\n[bold blue]Commands:[/bold blue]\n\no name - open a folder/note\nnf name - create a new folder\nnn name - create a new note\nd name - delete a folder/note\nl - list folders/notes\nb - back to folders\ne name - edit folder/note\ns name - search\ndn - creates a daily note in the 'dailys' folder\nhelp - displays commands\nhelp+ - more specific instructions\nq - quit\nmd - markdown syntax\nmv folder/note destination - moves a note to the destination folder\n")
 
     elif choice == "help+":
-        console.print("\n[bold blue]Instructions:[/bold blue]\n\n[bold]o name[/bold] - if you're in the root folder, it opens a folder, if you're in a folder, it opens a note\n[bold]nf name[/bold] - creates a folder with the given name into the root folder\n[bold]nn name[/bold] - create a new note with the given name. Must be inside of a folder!\n[bold]dn[/bold] - creates a new note with the current dater. Adds it to the 'dailys' folder, if not created then it will create it.\n[bold]d name[/bold] - if you're in the root folder, it deletes a folder, if you're in a folder, it deletes a note\n[bold]l[/bold] - if you're in the root folder, it lists all folders, if you're in a folder, it lists all notes\n[bold]b[/bold] - takes you back to the root folder\n[bold]e name[/bold] - if you're in the root folder, it allows you to edit a folder name, if you're in a folder, it allows you to edit the note name and its contents\n[bold]s name[/bold] - search for folder or note. If found, you can open the folder in which it was found (search is case sensitive)\n([bold]f[/bold]) - type of (folder)\n([bold]n[/bold]) - type of (note)\n[bold]help[/bold] - displays commands\n[bold]help+[/bold] - more specific instructions\n[bold]q[/bold] - quits the application\n")
+        console.print("\n[bold blue]Instructions:[/bold blue]\n\n[bold]o name[/bold] - if you're in the root folder, it opens a folder, if you're in a folder, it opens a note\n[bold]nf name[/bold] - creates a folder with the given name into the root folder\n[bold]nn name[/bold] - create a new note with the given name. Must be inside of a folder!\n[bold]dn[/bold] - creates a new note with the current dater. Adds it to the 'dailys' folder, if not created then it will create it.\n[bold]d name[/bold] - if you're in the root folder, it deletes a folder, if you're in a folder, it deletes a note\n[bold]l[/bold] - if you're in the root folder, it lists all folders, if you're in a folder, it lists all notes\n[bold]b[/bold] - takes you back to the root folder\n[bold]e name[/bold] - if you're in the root folder, it allows you to edit a folder name, if you're in a folder, it allows you to edit the note name and its contents\n[bold]s name[/bold] - search for folder or note. If found, you can open the folder in which it was found (search is case sensitive)\n([bold]f[/bold]) - type of (folder)\n([bold]n[/bold]) - type of (note)\n[bold]help[/bold] - displays commands\n[bold]help+[/bold] - more specific instructions\n[bold]q[/bold] - quits the application\n[bold]md[/bold] - markdown syntax\n[bold]mv folder/note destination[/bold] - moves a note to the destination folder. [bold]Does not work for names with spaces[/bold]\n")
 
     elif choice == "q":
       break
+    
+    elif choice == "md":
+      console.print("\n[bold blue]Markdown:[/bold blue]\n\n[bold]-[][/bold] - uncomplete todo\n[bold]-[x][/bold] - complete todo\n[bold]-[/bold] - list item\n[bold]#[/bold] - header\n")
 
     elif choice == "dn":
       if "dailys" not in [f for f in os.listdir(BASE_DIR) if os.path.isdir(os.path.join(BASE_DIR, f))]:
@@ -693,6 +744,18 @@ def run():
           break
         content += line + "\n"  # Add the line to the note content
       create_note(in_folder, name, tags, content)
+
+    elif choice.startswith("mv "):
+      specification = choice[3:].strip()
+      if " " not in specification:
+        print("\n[bold red]Invalid format. Use 'mv source destination'.[/bold red]\n")
+      else:
+        # Split the input into source and destination, accounting for spaces in names
+        try:
+          source, destination = specification.split(" ", 1)
+          move_note_or_folder(source.strip(), destination.strip())
+        except ValueError:
+          print("\n[bold red]Invalid format. Use 'mv source destination'.[/bold red]\n")
 
     else:
       print("\n[bold red]Invalid command.[/bold red]\n")
