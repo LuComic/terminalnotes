@@ -409,7 +409,7 @@ def edit_note_or_folder(name):
     if new_name and new_name != name and check_name(new_name):
       new_path = os.path.join(BASE_DIR, in_folder, f"{new_name}.txt")
       os.rename(note_path, new_path)
-      print(f"\n[bold green]Note renamed to '{new_name}'.[/bold green]")
+      print(f"\n[bold green]Note renamed to '{new_name}'.[/bold green]\n")
       name = new_name  # Update name
       note_path = new_path  # Update path
 
@@ -422,8 +422,6 @@ def edit_note_or_folder(name):
     if len(parts) > 1:
       tag_string = parts[1]
       old_tags_list = extract_tags_from_styled_string(tag_string)
-    else:
-      print("No tags found in the expected format on the first line.")
 
     print(f"\n[bold blue]Current tags:[/bold blue]")
     for i, tag in enumerate(old_tags_list, 1):
@@ -561,13 +559,16 @@ def edit_note_or_folder(name):
     print("\nEnter a new name for the folder:")
     new_name = input().strip()
 
-    if new_name and new_name != name and check_name(name):
+    # Corrected condition to check the new folder name
+    if new_name and new_name != name and check_name(new_name):
       new_folder_path = os.path.join(BASE_DIR, new_name)
       os.rename(folder_path, new_folder_path)
-      print(f"\n[bold green]Folder renamed to '{new_name}'.[/bold green]")
+      print(f"\n[bold green]Folder renamed to '{new_name}'.[/bold green]\n")
 
       if in_folder == name:
         in_folder = new_name  # Update reference
+    else:
+      print("\n[bold red]Invalid or duplicate folder name.[/bold red]\n")
 
 def move_note_or_folder(source, destination):
   """Moves a note or folder to a new destination."""
