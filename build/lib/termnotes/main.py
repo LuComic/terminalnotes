@@ -341,8 +341,8 @@ def read_note(folder, name):
       elif line.startswith("-[]"):
         modified_line = f"[bold red]- [/bold red]{line.lstrip("-[]").strip()}"
         modified_lines.append(modified_line)
-      elif line.startswith("-[x]"):
-        modified_line = f"[bold green]+ [/bold green]{line.lstrip("-[x]").strip()}"
+      elif line.startswith("-[+]"):
+        modified_line = f"[bold green]+ [/bold green]{line.lstrip("-[+]").strip()}"
         modified_lines.append(modified_line)
       elif line.startswith("- "):
         modified_line = f"\t• {line.lstrip("- ").strip()}"
@@ -718,7 +718,7 @@ def run():
       break
     
     elif choice == "md":
-      console.print("\n[bold blue]Markdown:[/bold blue]\n\n[bold]-[][/bold] - uncomplete todo\n[bold]-[x][/bold] - complete todo\n[bold]-[/bold] - list item\n[bold]#[/bold] - header\n")
+      console.print("\n[bold blue]Markdown:[/bold blue]\n\n[bold]-[][/bold] - uncomplete todo\n[bold]-[+][/bold] - complete todo\n[bold]-[/bold] - list item\n[bold]#[/bold] - header\n")
 
     elif choice == "dn":
       if "dailys" not in [f for f in os.listdir(BASE_DIR) if os.path.isdir(os.path.join(BASE_DIR, f))]:
