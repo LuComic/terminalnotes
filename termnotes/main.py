@@ -114,55 +114,35 @@ def create_folder(name):
     print("\n[bold red]There's already a file with that name.[/bold red]\n")
 
 def create_note(folder, name, tags, content):
-  """Creates a new note inside a folder."""
+  """Creates a new note inside a folder, storing plain tags."""
   folder_path = os.path.join(BASE_DIR, folder)
 
   if not os.path.exists(folder_path):
     print("\n[bold red]Folder not found. Create the folder first.[/bold red]\n")
     return
 
-  if len(tags) > 0:
+  # Process tags into a plain comma-separated string
+  if tags:
     lines = tags.splitlines()
-    lines_with_tags = [f"[bold pale_violet_red1]#{line}[/bold pale_violet_red1]" for line in lines]
-    final_tags = ", ".join(lines_with_tags)
+    # Clean tags: remove leading/trailing whitespace and any leading '#'
+    cleaned_tags = [line.strip().lstrip('#') for line in lines if line.strip()]
+    # Join plain tags with comma and space
+    final_tags = ", ".join(cleaned_tags)
   else:
     final_tags = ""
 
   if check_name(name):
     note_path = os.path.join(folder_path, f"{name}.txt")
     with open(note_path, "w") as file:
-      if len(final_tags) > 0:
-        file.write(f"Tags: {final_tags}\n\n")
-      else:
-        file.write("Tags: \n\n")
+      # Write the plain tags string
+      file.write(f"Tags: {final_tags}\n\n")
       file.write(content)
     print(f"\n[bold green]New note '{name}' created in '{folder}'.[/bold green]\n")
   else:
     print("\n[bold red]There's already a file with that name.[/bold red]\n")
 
-def extract_tags_from_styled_string(styled_tags_str):
-  """Extracts a list of lowercase tags specifically from '[bold pale_violet_red1]#tag[/bold pale_violet_red1]' format."""
-  tags = []
-  for styled_tag in styled_tags_str.split(','):
-    cleaned_tag = styled_tag.strip()
-    start_bold = cleaned_tag.find("[bold pale_violet_red1]")
-    end_bold = cleaned_tag.find("[/bold pale_violet_red1]")
-
-    if start_bold != -1 and end_bold != -1 and start_bold < end_bold:
-      tag_start = start_bold + len("[bold pale_violet_red1]")
-      extracted_tag = cleaned_tag[tag_start:end_bold].lstrip('#').lower()
-      if extracted_tag:
-        tags.append(extracted_tag)
-    # If the tag doesn't match the expected bold format, you might want to handle it differently
-    # For example, just strip '#' and lowercase if no styling is found.
-    else:
-      cleaned_plain_tag = cleaned_tag.lstrip('#').lower()
-      if cleaned_plain_tag:
-        tags.append(cleaned_plain_tag)
-  return tags
-
 def search(query):
-  """Searches for folders, notes by name, or notes by tags and prompts to open."""
+  """Searches for folders, notes by name, or notes by tags (reading plain tags) and prompts to open."""
   global in_folder
   found_notes_by_name = []
   found_notes_by_tag = {}
@@ -177,14 +157,19 @@ def search(query):
           if note_file.endswith(".txt"):
             note_path = os.path.join(folder_path, note_file)
             note_name = note_file.replace(".txt", "")
-            with open(note_path, "r") as f:
-              first_line = f.readline().strip()
-              if first_line.lower().startswith("tags:"):
-                tags_str = first_line[len("tags:"):].strip()
-                note_tags = extract_tags_from_styled_string(tags_str) # Use the specific extraction
-                if tag_to_search in note_tags:
-                  if note_name not in found_notes_by_tag:
-                    found_notes_by_tag[note_name] = folder
+            try: # Added try-except for potentially empty files
+              with open(note_path, "r") as f:
+                first_line = f.readline().strip()
+                if first_line.lower().startswith("tags:"):
+                  tags_str = first_line[len("tags:"):].strip()
+                  # Read plain tags, split, strip, and lowercase
+                  note_tags = [tag.strip().lower() for tag in tags_str.split(',') if tag.strip()]
+                  if tag_to_search in note_tags:
+                    if note_name not in found_notes_by_tag:
+                      found_notes_by_tag[note_name] = folder
+            except Exception as e:
+              print(f"[dim]Skipping note {folder}/{note_name} due to read error: {e}[/dim]")
+
 
   if found_notes_by_tag:
     results_content = "[bold blue]Notes found by tag:[/bold blue]\n"
@@ -316,7 +301,7 @@ def search(query):
     console.print("[bold red]\nInvalid choice.[/bold red]\n")
 
 def read_note(folder, name):
-  """Reads and displays a note with bold Markdown headings."""
+  """Reads and displays a note, applying styling to tags and Markdown headings."""
   note_path = os.path.join(BASE_DIR, folder, f"{name}.txt")
   word_count = 0
 
@@ -324,34 +309,59 @@ def read_note(folder, name):
     console.print(f"\n[bold red]Note '{name}' not found in '{folder}'.[/bold red]\n")
     return
 
-  with open(note_path, "r") as file:
-    content = file.read()
-    lines = content.split('\n')
-    words = []
-    for line in lines[1:]:
-      for word in line.split():
-          words.append(word)
+  try:
+    with open(note_path, "r") as file:
+        lines = file.readlines() # Read all lines at once
+  except Exception as e:
+    console.print(f"\n[bold red]Error reading note '{name}': {e}[/bold red]\n")
+    return
 
-    modified_lines = []
-    for line in lines:
-      if line.startswith("#"):
-        # Replace Markdown heading with rich's bold markup
-        modified_line = f"[bold]{line.lstrip("#").strip()}[/bold]"
-        modified_lines.append(modified_line)
-      elif line.startswith("-[]"):
-        modified_line = f"[bold red]- [/bold red]{line.lstrip("-[]").strip()}"
-        modified_lines.append(modified_line)
-      elif line.startswith("-[+]"):
-        modified_line = f"[bold green]+ [/bold green]{line.lstrip("-[+]").strip()}"
-        modified_lines.append(modified_line)
-      elif line.startswith("- "):
-        modified_line = f"\t• {line.lstrip("- ").strip()}"
-        modified_lines.append(modified_line)
+  words = []
+  modified_lines = []
+  tags_line_processed = False # Flag to ensure we only process the first Tags line
+
+  for i, line in enumerate(lines):
+      clean_line = line.strip() # Use stripped line for checks, original for words/output
+
+      # --- Tag Styling ---
+      if not tags_line_processed and clean_line.lower().startswith("tags:"):
+          tags_str = clean_line[len("tags:"):].strip()
+          if tags_str: # Only style if there are tags
+              plain_tags = [tag.strip() for tag in tags_str.split(',')]
+              styled_tags = [f"[bold pale_violet_red1]#{tag}[/bold pale_violet_red1]" for tag in plain_tags if tag]
+              modified_lines.append("Tags: " + ", ".join(styled_tags))
+          else:
+              modified_lines.append("Tags: ") # Keep empty tags line as is
+          tags_line_processed = True
+      # --- Markdown Styling ---
+      elif clean_line.startswith("# "): # Standard Markdown heading requires space
+          modified_line = f"[bold]{clean_line.lstrip('#').strip()}[/bold]"
+          modified_lines.append(modified_line)
+          # Count words in headings too, if desired (excluding the '#')
+          words.extend(clean_line.lstrip('#').strip().split())
+      elif clean_line.startswith("-[]"):
+          modified_line = f"[bold red]- [/bold red]{clean_line.lstrip('-[]').strip()}"
+          modified_lines.append(modified_line)
+          words.extend(clean_line.lstrip('-[]').strip().split())
+      elif clean_line.startswith("-[+]"):
+          modified_line = f"[bold green]+ [/bold green]{clean_line.lstrip('-[+]').strip()}"
+          modified_lines.append(modified_line)
+          words.extend(clean_line.lstrip('-[+]').strip().split())
+      elif clean_line.startswith("- "):
+          modified_line = f"\t• {clean_line.lstrip('- ').strip()}"
+          modified_lines.append(modified_line)
+          words.extend(clean_line.lstrip('- ').strip().split())
+      # --- Regular Content ---
       else:
-        modified_lines.append(line)
+          # Add the original line (with potential leading/trailing whitespace preserved for formatting)
+          modified_lines.append(line.rstrip('\n')) # Avoid double newlines
+          # Only count words if it's not the tags line or the blank line after tags
+          if i > 1 or not tags_line_processed: # Adjust index check if needed
+              words.extend(clean_line.split())
 
-    content = "\n".join(modified_lines)  # Join the modified lines back into content
-    word_count = len(words)
+  # Reconstruct content for display
+  content_for_display = "\n".join(modified_lines)
+  word_count = len(words)
 
   title = f"[bold blue]{name} | {word_count} words[/bold blue]"
 
@@ -366,7 +376,8 @@ def read_note(folder, name):
   folder_content = "\n".join([f"├── {line}" for line in note_lines[:-1]] + [f"└── {note_lines[-1]}"])
   folder_title = f"[bold blue]{folder}[/bold blue]"
   folder_panel = Panel(folder_content, title=folder_title, expand=True)
-  note_panel = Panel("\n" + content, title=title, expand=True)
+  # Added newline before content for spacing
+  note_panel = Panel("\n" + content_for_display, title=title, expand=True)
 
   console.print("\n")
   console.print(folder_panel)
@@ -392,7 +403,7 @@ def delete_note_or_folder(name, is_folder):
       print("\n[bold red]Note not found.[/bold red]\n")
 
 def edit_note_or_folder(name):
-  """Edits a note (rename and modify content) or renames a folder."""
+  """Edits a note (rename, modify tags, modify content) or renames a folder, working with plain tags."""
   global in_folder
 
   if in_folder:  # Editing a note
@@ -404,170 +415,216 @@ def edit_note_or_folder(name):
 
     # Step 1: Rename the note (optional)
     print("\nPress Enter to keep the current name, or type a new name:")
-    new_name = input().strip()
+    new_name_input = input().strip() # Renamed variable to avoid conflict
 
-    if new_name and new_name != name and check_name(new_name):
-      new_path = os.path.join(BASE_DIR, in_folder, f"{new_name}.txt")
+    # Use check_name relative to the *current* folder for notes
+    def check_note_name_in_folder(folder, note_name_to_check):
+        folder_path = os.path.join(BASE_DIR, folder)
+        if not os.path.isdir(folder_path):
+            return True # Folder doesn't exist, so name is available technically
+        existing_notes = [f.replace(".txt", "") for f in os.listdir(folder_path) if f.endswith(".txt")]
+        return note_name_to_check not in existing_notes
+
+    if new_name_input and new_name_input != name and check_note_name_in_folder(in_folder, new_name_input):
+      new_path = os.path.join(BASE_DIR, in_folder, f"{new_name_input}.txt")
       os.rename(note_path, new_path)
-      print(f"\n[bold green]Note renamed to '{new_name}'.[/bold green]\n")
-      name = new_name  # Update name
+      print(f"\n[bold green]Note renamed to '{new_name_input}'.[/bold green]\n")
+      name = new_name_input  # Update name
       note_path = new_path  # Update path
+    elif new_name_input and new_name_input != name:
+        print(f"\n[bold red]Note name '{new_name_input}' already exists in folder '{in_folder}'.[/bold red]\n")
+        # Optionally return here or let the user proceed with editing content under the old name
+        # Let's proceed for now
 
-    with open(note_path, "r") as f:
-      old_tags_plain = f.readline().strip()
 
-    # Use extract_tags_from_styled_string to get clean tags
+    # Read existing content including the tags line
+    try:
+        with open(note_path, "r") as f:
+            all_lines = f.readlines()
+    except Exception as e:
+        print(f"\n[bold red]Error reading note for editing: {e}[/bold red]\n")
+        return
+
+    # Extract plain tags from the first line
     old_tags_list = []
-    parts = old_tags_plain.split(": ")
-    if len(parts) > 1:
-      tag_string = parts[1]
-      old_tags_list = extract_tags_from_styled_string(tag_string)
+    if all_lines:
+        first_line = all_lines[0].strip()
+        if first_line.lower().startswith("tags:"):
+            tag_string = first_line[len("tags:"):].strip()
+            if tag_string: # Check if there are any tags
+                # Split plain tags
+                old_tags_list = [tag.strip() for tag in tag_string.split(',') if tag.strip()]
+        else:
+             # If first line isn't tags, assume no tags initially
+             all_lines.insert(0, "Tags: \n") # Add a placeholder Tags line
+             all_lines.insert(1, "\n") # Add blank line after tags
 
     print(f"\n[bold blue]Current tags:[/bold blue]")
-    for i, tag in enumerate(old_tags_list, 1):
-      print(f"{i}: {tag}")
+    if not old_tags_list:
+        print("[dim]No tags defined.[/dim]")
+    else:
+        for i, tag in enumerate(old_tags_list, 1):
+            print(f"{i}: {tag}") # Display plain tags
 
-    new_tags = old_tags_list[:]
+    new_tags = old_tags_list[:] # Start editing with current tags
 
+    # Tag editing loop
     while True:
-      command = console.input("[bold blue]\nEnter:[/bold blue]\n'line number' to edit a tag\n'a' to add a tag/tags\n'd + line number' to delete a tag\n'c + line number' to copy a tag\n'save' to save:\n\n[bold blue]cmd: [/bold blue]").strip()
+      command = console.input("[bold blue]\nEdit Tags:[/bold blue]\n'line number' to edit\n'a' to add\n'd + line number' to delete\n'c + line number' to copy\n'save' to save tags:\n\n[bold blue]cmd: [/bold blue]").strip()
 
       if command.lower() == "save":
         break
       elif command.lower() == "a":
-        print("\nAdd tags (enter 'save' when finished):")
+        print("\nAdd tag(s) (one per line, enter 'save' when finished):")
         while True:
-          new_line = input().strip()
-          if new_line.lower() == "save":
+          new_tag_input = input().strip()
+          if new_tag_input.lower() == "save":
             break
-          new_tags.append(new_line)  # Append new tags without newline
+          # Add the plain tag directly, clean it first
+          cleaned_add_tag = new_tag_input.lstrip('#').strip()
+          if cleaned_add_tag: # Avoid adding empty tags
+             new_tags.append(cleaned_add_tag)
+             print(f"[dim]Added: {cleaned_add_tag}[/dim]")
       elif command.isdigit():
         line_number = int(command) - 1
         if 0 <= line_number < len(new_tags):
-          print(f"Current: {new_tags[line_number].strip()}")
-          new_text = input("Edited tag: ").strip()
-          if new_text:
-            new_tags[line_number] = new_text  # Modify without newline
+          print(f"Current tag {line_number + 1}: {new_tags[line_number]}")
+          edited_tag_input = input("Edited tag: ").strip()
+          # Edit the plain tag, clean it
+          cleaned_edit_tag = edited_tag_input.lstrip('#').strip()
+          if cleaned_edit_tag:
+            new_tags[line_number] = cleaned_edit_tag
+          else:
+            print("[bold yellow]Tag cannot be empty. Deleting instead.[/bold yellow]")
+            del new_tags[line_number] # Delete if user provides empty input
         else:
           print("[bold red]Invalid line number.[/bold red]")
       elif command.startswith("d ") and command[2:].isdigit():
         line_number = int(command[2:]) - 1
         if 0 <= line_number < len(new_tags):
-          del new_tags[line_number]
-          print(f"\n[bold green]Tag {line_number + 1} deleted.[/bold green]")
+          deleted_tag = new_tags.pop(line_number)
+          print(f"\n[bold green]Tag '{deleted_tag}' (nr {line_number + 1}) deleted.[/bold green]")
+          # Re-display tags after deletion
+          print(f"\n[bold blue]Current tags:[/bold blue]")
+          if not new_tags:
+              print("[dim]No tags defined.[/dim]")
+          else:
+              for i, tag in enumerate(new_tags, 1):
+                  print(f"{i}: {tag}")
         else:
           print("[bold red]Invalid line number.[/bold red]")
       elif command.startswith("c ") and command[2:].isdigit():
         line_number = int(command[2:]) - 1
         if 0 <= line_number < len(new_tags):
-          copied_line = new_tags[line_number]
-          pyperclip.copy(copied_line)
-          print(f"\n[bold green]Tag nr {line_number + 1} copied to clipboard.[/bold green]")
+          copied_tag = new_tags[line_number]
+          pyperclip.copy(copied_tag) # Copy plain tag
+          print(f"\n[bold green]Tag '{copied_tag}' (nr {line_number + 1}) copied to clipboard.[/bold green]")
         else:
           print("[bold red]Invalid line number.[/bold red]")
       else:
         print("[bold red]Invalid command.[/bold red]")
 
-    # Format tags for output
-    if new_tags:
-      processed_tags = []
-      for tag in new_tags:
-        cleaned_tag = tag.strip().replace("#", '')
-        if cleaned_tag:
-          processed_tags.append(f"[bold pale_violet_red1]#{cleaned_tag}[/bold pale_violet_red1]")
-      final_tags = ", ".join(processed_tags)
-    else:
-      final_tags = ""
+    # Format final plain tags for saving
+    final_tags_plain = ", ".join(new_tags) # Join the list of plain tags
 
-    with open(note_path, "r") as file:
-      all_lines = file.readlines()
+    # Update the first line in all_lines with the new plain tags
+    all_lines[0] = f"Tags: {final_tags_plain}\n"
 
-    if all_lines:
-      first_line = all_lines[0].strip()
-      if first_line.startswith("Tags:"):
-        all_lines[0] = f"Tags: {final_tags}\n"
-      else:
-        all_lines.insert(0, f"Tags: {final_tags}\n\n")
-    else:
-      all_lines = [f"Tags: {final_tags}\n", "\n"]
+    # Ensure there's a blank line after tags if content exists
+    if len(all_lines) > 1 and all_lines[1].strip() != "":
+        all_lines.insert(1, "\n")
+    elif len(all_lines) == 1: # Only tag line exists
+        all_lines.append("\n") # Add the blank line
 
-    with open(note_path, "w") as file:
-      file.writelines(all_lines)
 
-    print("\n[bold green]Tags updated successfully.[/bold green]\n")
-    # Step 2: Edit existing content
-    with open(note_path, "r") as file:
-      old_content = file.readlines()
+    # --- Content Editing ---
+    # Use lines starting *after* the Tags line and the potential blank line
+    content_start_index = 2 # Index of the first actual content line
+    old_content_lines = all_lines[content_start_index:]
 
     print(f"\n[bold blue]Current content:[/bold blue]")
-    for i, line in enumerate(old_content, 1):
-      print(f"{i}: {line.strip()}")
+    if not old_content_lines:
+        print("[dim]Note is empty.[/dim]")
+    else:
+        for i, line in enumerate(old_content_lines):
+            print(f"{i+1}: {line.strip()}") # Display content lines indexed from 1
 
-    new_content = old_content[:]  # Copy old content
+    new_content_lines = old_content_lines[:]  # Copy old content lines for editing
 
+    # Content editing loop
     while True:
-      command = console.input("[bold blue]\nEnter:[/bold blue]\n'line number' to edit\n'a' to append\n'd + line number' to delete\n'c + line number' to copy line\n'save' to save:\n\n[bold blue]cmd: [/bold blue]").strip()
+      command = console.input("[bold blue]\nEdit Content:[/bold blue]\n'line number' to edit\n'a' to append\n'd + line number' to delete\n'c + line number' to copy\n'save' to save content:\n\n[bold blue]cmd: [/bold blue]").strip()
 
       if command.lower() == "save":
         break
       elif command.lower() == "a":
         print("\nType new lines (enter 'save' when finished):")
         while True:
-          new_line = input()
-          if new_line.lower() == "save":
+          new_line_input = input()
+          if new_line_input.lower() == "save":
             break
-          new_content.append(new_line + "\n")  # Append new lines
+          new_content_lines.append(new_line_input + "\n")  # Append new lines
       elif command.isdigit():
-        line_number = int(command) - 1
-        if 0 <= line_number < len(new_content):
-          print(f"Current: {new_content[line_number].strip()}")
+        line_number = int(command) - 1 # Adjust to 0-based index for the list
+        if 0 <= line_number < len(new_content_lines):
+          print(f"Current line {line_number + 1}: {new_content_lines[line_number].strip()}")
           new_text = input("New text: ").strip()
-          if new_text:
-            new_content[line_number] = new_text + "\n"  # Modify the line
+          # Keep the newline consistent
+          new_content_lines[line_number] = new_text + "\n"
         else:
           print("[bold red]Invalid line number.[/bold red]")
       elif command.startswith("d ") and command[2:].isdigit():
-        line_number = int(command[2:]) - 1
-        if 0 <= line_number < len(new_content):
-          del new_content[line_number]  # Delete the specified line
-          print(f"\n[bold green]Line {line_number + 1} deleted.[/bold green]")
+        line_number = int(command[2:]) - 1 # Adjust to 0-based index
+        if 0 <= line_number < len(new_content_lines):
+          deleted_line = new_content_lines.pop(line_number)
+          print(f"\n[bold green]Line {line_number + 1} deleted: '{deleted_line.strip()}'[/bold green]")
+          # Re-display content numbers might be helpful here if list is long
         else:
           print("[bold red]Invalid line number.[/bold red]")
       elif command.startswith("c ") and command[2:].isdigit():
-        line_number = int(command[2:]) - 1
-        if 0 <= line_number < len(new_content):
-            copied_line = new_content[line_number]  # Copy the specified line
-            pyperclip.copy(copied_line)  # Copy the line to the clipboard
+        line_number = int(command[2:]) - 1 # Adjust to 0-based index
+        if 0 <= line_number < len(new_content_lines):
+            copied_line = new_content_lines[line_number]
+            pyperclip.copy(copied_line)
             print(f"\n[bold green]Line {line_number + 1} copied to clipboard.[/bold green]")
         else:
             print("[bold red]Invalid line number.[/bold red]")
       else:
         print("[bold red]Invalid command.[/bold red]")
 
-    # Save updated content
-    with open(note_path, "w") as file:
-      file.writelines(new_content)
+    # Combine updated tags line and updated content lines
+    final_lines_to_write = all_lines[:content_start_index] + new_content_lines
 
-    print("\n[bold green]Note updated successfully.[/bold green]\n")
+    # Save updated tags and content back to the file
+    try:
+        with open(note_path, "w") as file:
+            file.writelines(final_lines_to_write)
+        print("\n[bold green]Note updated successfully.[/bold green]\n")
+    except Exception as e:
+        print(f"\n[bold red]Error writing updated note: {e}[/bold red]\n")
+
 
   else:  # Renaming a folder
     folder_path = os.path.join(BASE_DIR, name)
-    if not os.path.exists(folder_path):
+    if not os.path.exists(folder_path) or not os.path.isdir(folder_path): # Check if it's actually a folder
       print("\n[bold red]Folder not found.[/bold red]\n")
       return
 
     print("\nEnter a new name for the folder:")
-    new_name = input().strip()
+    new_folder_name = input().strip()
 
-    # Corrected condition to check the new folder name
-    if new_name and new_name != name and check_name(new_name):
-      new_folder_path = os.path.join(BASE_DIR, new_name)
+    # Use the global check_name for folders in the base directory
+    if new_folder_name and new_folder_name != name and check_name(new_folder_name):
+      new_folder_path = os.path.join(BASE_DIR, new_folder_name)
       os.rename(folder_path, new_folder_path)
-      print(f"\n[bold green]Folder renamed to '{new_name}'.[/bold green]\n")
+      print(f"\n[bold green]Folder renamed to '{new_folder_name}'.[/bold green]\n")
 
-      if in_folder == name:
-        in_folder = new_name  # Update reference
-    else:
+      # No need to update in_folder here, as we are not inside any folder when renaming one
+    elif not new_folder_name:
+         print("\n[bold red]Folder name cannot be empty.[/bold red]\n")
+    elif new_folder_name == name:
+         print("\n[dim]Name unchanged.[/dim]\n")
+    else: # Name exists or other issue
       print("\n[bold red]Invalid or duplicate folder name.[/bold red]\n")
 
 def move_note_or_folder(source, destination):
