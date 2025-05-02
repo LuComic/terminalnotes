@@ -348,7 +348,7 @@ def read_note(folder, name):
           modified_lines.append(modified_line)
           words.extend(clean_line.lstrip('-[+]').strip().split())
       elif clean_line.startswith("- "):
-          modified_line = f"\t• {clean_line.lstrip('- ').strip()}"
+          modified_line = f"{" " * 4}• {clean_line.lstrip('- ').strip()}"
           modified_lines.append(modified_line)
           words.extend(clean_line.lstrip('- ').strip().split())
       # --- Regular Content ---
@@ -428,14 +428,13 @@ def edit_note_or_folder(name):
     if new_name_input and new_name_input != name and check_note_name_in_folder(in_folder, new_name_input):
       new_path = os.path.join(BASE_DIR, in_folder, f"{new_name_input}.txt")
       os.rename(note_path, new_path)
-      print(f"\n[bold green]Note renamed to '{new_name_input}'.[/bold green]\n")
+      print(f"\n[bold green]Note renamed to '{new_name_input}'.[/bold green]")
       name = new_name_input  # Update name
       note_path = new_path  # Update path
     elif new_name_input and new_name_input != name:
         print(f"\n[bold red]Note name '{new_name_input}' already exists in folder '{in_folder}'.[/bold red]\n")
         # Optionally return here or let the user proceed with editing content under the old name
         # Let's proceed for now
-
 
     # Read existing content including the tags line
     try:
@@ -539,8 +538,7 @@ def edit_note_or_folder(name):
 
     # --- Content Editing ---
     # Use lines starting *after* the Tags line and the potential blank line
-    content_start_index = 2 # Index of the first actual content line
-    old_content_lines = all_lines[content_start_index:]
+    old_content_lines = all_lines[2:]
 
     print(f"\n[bold blue]Current content:[/bold blue]")
     if not old_content_lines:
@@ -593,7 +591,7 @@ def edit_note_or_folder(name):
         print("[bold red]Invalid command.[/bold red]")
 
     # Combine updated tags line and updated content lines
-    final_lines_to_write = all_lines[:content_start_index] + new_content_lines
+    final_lines_to_write = all_lines[:2] + new_content_lines
 
     # Save updated tags and content back to the file
     try:
