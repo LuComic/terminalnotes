@@ -10,6 +10,7 @@ from rich import print
 from rich.panel import Panel
 from rich.console import Console
 from rich.prompt import Prompt
+import re
 
 console = Console()
 
@@ -301,7 +302,7 @@ def search(query):
     console.print("[bold red]\nInvalid choice.[/bold red]\n")
 
 def read_note(folder, name):
-  """Reads and displays a note, applying styling to tags and Markdown headings."""
+  """Reads and displays a note, applying styling to tags, Markdown headings, and detecting URLs."""
   note_path = os.path.join(BASE_DIR, folder, f"{name}.txt")
   word_count = 0
 
@@ -311,7 +312,7 @@ def read_note(folder, name):
 
   try:
     with open(note_path, "r") as file:
-        lines = file.readlines() # Read all lines at once
+      lines = file.readlines() # Read all lines at once
   except Exception as e:
     console.print(f"\n[bold red]Error reading note '{name}': {e}[/bold red]\n")
     return
@@ -320,44 +321,58 @@ def read_note(folder, name):
   modified_lines = []
   tags_line_processed = False # Flag to ensure we only process the first Tags line
 
-  for i, line in enumerate(lines):
-      clean_line = line.strip() # Use stripped line for checks, original for words/output
+  # Regex to find URLs (http or https)
+  # This regex tries to avoid capturing trailing punctuation like commas or periods.
+  url_pattern = re.compile(r"(https?://[^\s<>'\"]+)")
 
-      # --- Tag Styling ---
-      if not tags_line_processed and clean_line.lower().startswith("tags:"):
-          tags_str = clean_line[len("tags:"):].strip()
-          if tags_str: # Only style if there are tags
-              plain_tags = [tag.strip() for tag in tags_str.split(',')]
-              styled_tags = [f"[bold pale_violet_red1]#{tag}[/bold pale_violet_red1]" for tag in plain_tags if tag]
-              modified_lines.append("Tags: " + ", ".join(styled_tags))
-          else:
-              modified_lines.append("Tags: ") # Keep empty tags line as is
-          tags_line_processed = True
-      # --- Markdown Styling ---
-      elif clean_line.startswith("# "): # Standard Markdown heading requires space
-          modified_line = f"[bold]{clean_line.lstrip('#').strip()}[/bold]"
-          modified_lines.append(modified_line)
-          # Count words in headings too, if desired (excluding the '#')
-          words.extend(clean_line.lstrip('#').strip().split())
-      elif clean_line.startswith("-[]"):
-          modified_line = f"[bold red]- [/bold red]{clean_line.lstrip('-[]').strip()}"
-          modified_lines.append(modified_line)
-          words.extend(clean_line.lstrip('-[]').strip().split())
-      elif clean_line.startswith("-[+]"):
-          modified_line = f"[bold green]+ [/bold green]{clean_line.lstrip('-[+]').strip()}"
-          modified_lines.append(modified_line)
-          words.extend(clean_line.lstrip('-[+]').strip().split())
-      elif clean_line.startswith("- "):
-          modified_line = f"{" " * 4}• {clean_line.lstrip('- ').strip()}"
-          modified_lines.append(modified_line)
-          words.extend(clean_line.lstrip('- ').strip().split())
-      # --- Regular Content ---
+  for i, line in enumerate(lines):
+    clean_line = line.strip() # Use stripped line for checks
+
+    # --- Tag Styling ---
+    if not tags_line_processed and clean_line.lower().startswith("tags:"):
+      tags_str = clean_line[len("tags:"):].strip()
+      if tags_str: # Only style if there are tags
+        plain_tags = [tag.strip() for tag in tags_str.split(',')]
+        styled_tags = [f"[bold pale_violet_red1]#{tag}[/bold pale_violet_red1]" for tag in plain_tags if tag]
+        modified_lines.append("Tags: " + ", ".join(styled_tags))
       else:
-          # Add the original line (with potential leading/trailing whitespace preserved for formatting)
-          modified_lines.append(line.rstrip('\n')) # Avoid double newlines
-          # Only count words if it's not the tags line or the blank line after tags
-          if i > 1 or not tags_line_processed: # Adjust index check if needed
-              words.extend(clean_line.split())
+        modified_lines.append("Tags: ") # Keep empty tags line as is
+      tags_line_processed = True
+      # Don't count words in the tag line itself
+  # --- Markdown Styling ---
+    elif clean_line.startswith("# "): # Standard Markdown heading requires space
+      modified_line = f"[bold]{clean_line.lstrip('#').strip()}[/bold]"
+      modified_lines.append(modified_line)
+      words.extend(clean_line.lstrip('#').strip().split())
+    elif clean_line.startswith("-[]"):
+      modified_line = f"[bold red]- [/bold red]{clean_line.lstrip('-[]').strip()}"
+      modified_lines.append(modified_line)
+      words.extend(clean_line.lstrip('-[]').strip().split())
+    elif clean_line.startswith("-[+]"):
+      modified_line = f"[bold green]+ [/bold green]{clean_line.lstrip('-[+]').strip()}"
+      modified_lines.append(modified_line)
+      words.extend(clean_line.lstrip('-[+]').strip().split())
+    elif clean_line.startswith("- "):
+      modified_line = f"{" " * 4}• {clean_line.lstrip('- ').strip()}"
+      modified_lines.append(modified_line)
+      words.extend(clean_line.lstrip('- ').strip().split())
+    # --- Regular Content (with Link Detection) ---
+    else:
+      # Get the line content, removing trailing newline for processing
+      original_line_content = line.rstrip('\n')
+
+      # Use re.sub to find all URLs and replace them with Rich link markup
+      # The lambda function ensures we properly escape any existing Rich markup
+      # within the URL itself, although that's unlikely for standard URLs.
+      # It replaces `http://...` with `[link=http://...]http://...[/link]`
+      modified_line = url_pattern.sub(lambda match: f"[link={match.group(0)}]{match.group(0)}[/link]", original_line_content)
+
+      modified_lines.append(modified_line) # Add the potentially modified line
+
+      # Only count words if it's not the tags line or the blank line after tags
+      if i > 0 and (i > 1 or not tags_line_processed or lines[0].strip().lower() != "tags:"): # Refined word count logic
+        words.extend(clean_line.split())
+
 
   # Reconstruct content for display
   content_for_display = "\n".join(modified_lines)
@@ -365,19 +380,25 @@ def read_note(folder, name):
 
   title = f"[bold blue]{name} | {word_count} words[/bold blue]"
 
+  # --- Panel Creation (same as before) ---
   folder_path = os.path.join(BASE_DIR, folder)
   notes = [f.replace(".txt", "") for f in os.listdir(folder_path) if f.endswith(".txt")]
-  note_lines = []
-  for i, note in enumerate(notes):
-    if i == len(notes) - 1:
-      note_lines.append(f"[bold]{note}[/bold] (n)")
-    else:
-      note_lines.append(f"[bold]{note}[/bold] (n)")
-  folder_content = "\n".join([f"├── {line}" for line in note_lines[:-1]] + [f"└── {note_lines[-1]}"])
+  if not notes:
+    folder_content = "[dim]└── No other notes in this folder.[/dim]" # Handle empty folder case
+  else:
+    note_lines = []
+    for i, note in enumerate(notes):
+      line_prefix = "├──" if i < len(notes) - 1 else "└──"
+      # Highlight the current note differently (optional)
+      if note == name:
+        note_lines.append(f"{line_prefix} [bold underline]{note}[/bold underline] (n)")
+      else:
+        note_lines.append(f"{line_prefix} [bold]{note}[/bold] (n)")
+    folder_content = "\n".join(note_lines)
+
   folder_title = f"[bold blue]{folder}[/bold blue]"
   folder_panel = Panel(folder_content, title=folder_title, expand=True)
-  # Added newline before content for spacing
-  note_panel = Panel("\n" + content_for_display, title=title, expand=True)
+  note_panel = Panel(content_for_display, title=title, expand=True) # Removed extra \n, add padding/margin if needed
 
   console.print("\n")
   console.print(folder_panel)
