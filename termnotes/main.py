@@ -10,7 +10,7 @@ from rich import print
 from rich.panel import Panel
 from rich.console import Console
 from rich.prompt import Prompt
-import re
+from rich.box import DOUBLE_EDGE
 
 console = Console()
 
@@ -57,8 +57,8 @@ def list_folders():
         folder_lines.append(f"[bold]{folder}[/bold] (f)")
     content = "\n".join([f"├── {line}" for line in folder_lines[:-1]] + [f"└── {folder_lines[-1]}"])
 
-  inner_panel = Panel(content, title="[bold blue]Folders[/bold blue]", expand=True)  # Customize title color
-  empty_panel = Panel("Nothing open", title="", expand=True)
+  inner_panel = Panel(content, title="[bold blue]Folders[/bold blue]", expand=True, box=DOUBLE_EDGE)  # Customize title color
+  empty_panel = Panel("Nothing open", title="", expand=True, box=DOUBLE_EDGE)
 
   console.print("\n")
   console.print(inner_panel)
@@ -89,16 +89,16 @@ def list_notes(folder):
 
   folder_lines = []
   for i, some_folder in enumerate(folders):
-    if i == len(folders) - 1:  # Last item in the list
-      folder_lines.append(f"[bold]{some_folder}[/bold] (f)")
+    if some_folder == folder:  # Last item in the list
+      folder_lines.append(f"[bold underline]{some_folder}[/bold underline] (f)")
     else:
       folder_lines.append(f"[bold]{some_folder}[/bold] (f)")
   folder_content = "\n".join([f"├── {line}" for line in folder_lines[:-1]] + [f"└── {folder_lines[-1]}"])
 
-  all_folders_panel = Panel(folder_content, title="[bold blue]Folders[/bold blue]", expand=True)  # Customize title color
+  all_folders_panel = Panel(folder_content, title="[bold blue]Folders[/bold blue]", expand=True, box=DOUBLE_EDGE)  # Customize title color
 
   panel_title = f"[bold blue]{folder}[/bold blue]"  # Customize title color
-  folder_panel = Panel(content, title=panel_title, expand=True)
+  folder_panel = Panel(content, title=panel_title, expand=True, box=DOUBLE_EDGE)
 
   console.print("\n")
   console.print(all_folders_panel)
@@ -180,7 +180,7 @@ def search(query):
         results_content += f"└── [bold]{folder}/{name}[/bold] (n)"
       else:
         results_content += f"├── [bold]{folder}/{name}[/bold] (n)\n"
-    results_panel = Panel(results_content, title="[bold green]Tag Search Results[/bold green]")
+    results_panel = Panel(results_content, title="[bold green]Tag Search Results[/bold green]", box=DOUBLE_EDGE)
     console.print("\n")
     console.print(results_panel)
     choice = Prompt.ask("\nType 'o + note name' to open or 'c' to cancel").strip().lower()
@@ -272,7 +272,7 @@ def search(query):
 
   results_content = "\n".join(search_results)
   results_panel = Panel(
-    results_content, title="[bold green]Search Results[/bold green]"
+    results_content, title="[bold green]Search Results[/bold green]", box=DOUBLE_EDGE
   )
   console.print("\n")
   console.print(results_panel)
@@ -302,7 +302,7 @@ def search(query):
     console.print("[bold red]\nInvalid choice.[/bold red]\n")
 
 def read_note(folder, name):
-  """Reads and displays a note, applying styling to tags, Markdown headings, and detecting URLs."""
+  """Reads and displays a note, applying styling to tags and Markdown headings"""
   note_path = os.path.join(BASE_DIR, folder, f"{name}.txt")
   word_count = 0
 
@@ -320,10 +320,6 @@ def read_note(folder, name):
   words = []
   modified_lines = []
   tags_line_processed = False # Flag to ensure we only process the first Tags line
-
-  # Regex to find URLs (http or https)
-  # This regex tries to avoid capturing trailing punctuation like commas or periods.
-  url_pattern = re.compile(r"(https?://[^\s<>'\"]+)")
 
   for i, line in enumerate(lines):
     clean_line = line.strip() # Use stripped line for checks
@@ -358,21 +354,10 @@ def read_note(folder, name):
       words.extend(clean_line.lstrip('- ').strip().split())
     # --- Regular Content (with Link Detection) ---
     else:
-      # Get the line content, removing trailing newline for processing
-      original_line_content = line.rstrip('\n')
-
-      # Use re.sub to find all URLs and replace them with Rich link markup
-      # The lambda function ensures we properly escape any existing Rich markup
-      # within the URL itself, although that's unlikely for standard URLs.
-      # It replaces `http://...` with `[link=http://...]http://...[/link]`
-      modified_line = url_pattern.sub(lambda match: f"[link={match.group(0)}]{match.group(0)}[/link]", original_line_content)
-
-      modified_lines.append(modified_line) # Add the potentially modified line
-
+      modified_lines.append(line.rstrip('\n')) # Add the potentially modified line
       # Only count words if it's not the tags line or the blank line after tags
       if i > 0 and (i > 1 or not tags_line_processed or lines[0].strip().lower() != "tags:"): # Refined word count logic
         words.extend(clean_line.split())
-
 
   # Reconstruct content for display
   content_for_display = "\n".join(modified_lines)
@@ -397,8 +382,8 @@ def read_note(folder, name):
     folder_content = "\n".join(note_lines)
 
   folder_title = f"[bold blue]{folder}[/bold blue]"
-  folder_panel = Panel(folder_content, title=folder_title, expand=True)
-  note_panel = Panel(content_for_display, title=title, expand=True) # Removed extra \n, add padding/margin if needed
+  folder_panel = Panel(folder_content, title=folder_title, expand=True, box=DOUBLE_EDGE)
+  note_panel = Panel(content_for_display, title=title, expand=True, box=DOUBLE_EDGE) # Removed extra \n, add padding/margin if needed
 
   console.print("\n")
   console.print(folder_panel)
