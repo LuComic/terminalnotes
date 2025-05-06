@@ -2,14 +2,18 @@ from setuptools import setup, find_packages
 
 setup(
     name="termnotes",  # This is your package name
-    version="18.6",
+    version="18.7",
     packages=find_packages(),
     install_requires=[
-        "termcolor",  # Add any dependencies you need here
+        "appdirs",
+        "gnureadline",
+        "pyperclip",
+        "rich",
+        "termcolor",  # Keep this if you actually use it in your code elsewhere
     ],
     entry_points={
         'console_scripts': [
-            'termnotes=termnotes.main:run',  # 'tnotes' will call the `run` function from tnotes.main
+            'termnotes=termnotes.main:run',  # 'termnotes' will call the `run` function from termnotes.main
         ],
     },
     classifiers=[
