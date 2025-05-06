@@ -4,13 +4,14 @@ from datetime import datetime
 import os
 import shutil
 import appdirs
-import readline
+import gnureadline as readline
 import pyperclip
 from rich import print
 from rich.panel import Panel
 from rich.console import Console
 from rich.prompt import Prompt
 from rich.box import DOUBLE_EDGE
+import glob
 
 console = Console()
 
@@ -36,6 +37,31 @@ in_folder = None  # Tracks current folder
 
 # Ensure the directory exists
 os.makedirs(BASE_DIR, exist_ok=True)
+
+def filename_completer(text, state):
+  """
+  Completer function for filenames within the current context.
+  """
+  matches = []
+  if in_folder:
+    # Complete note filenames within the current folder
+    folder_path = os.path.join(BASE_DIR, in_folder)
+    note_files = glob.glob(os.path.join(folder_path, text + '*.txt'))
+    matches.extend([os.path.basename(f).replace('.txt', '') for f in note_files])
+  else:
+    # Complete folder names in the base directory
+    folder_paths = glob.glob(os.path.join(BASE_DIR, text + '*'))
+    matches.extend([os.path.basename(f) for f in folder_paths if os.path.isdir(f)])
+
+  try:
+    return matches[state]
+  except IndexError:
+    return None
+
+readline.set_completer(filename_completer)
+readline.set_completer_delims(' \t\n')
+readline.parse_and_bind("tab: menu-complete")
+readline.set_completion_display_matches_hook(None) # Use the default display hook
 
 def setup():
   """Ensures the base Notes directory exists."""
