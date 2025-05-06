@@ -1,5 +1,8 @@
 # termnotes
 A simple, yet fast and efficient note taking app in your terminal!
+```bash
+pipx install terminalnotes
+```
 
 ## Perks over regular note taking apps:
 
