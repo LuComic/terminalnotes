@@ -23,4 +23,4 @@ A simple, yet fast and efficient note taking app in your terminal!
 To install, run:
 
 ```bash
-pip3 install termnotes
+pipx install terminalnotes
