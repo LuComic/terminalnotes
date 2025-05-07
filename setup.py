@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="termnotes",  # This is your package name
-    version="18.7",
+    version="18.8",
     packages=find_packages(),
     install_requires=[
         "appdirs",
