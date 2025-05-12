@@ -384,7 +384,7 @@ def read_note(folder, name):
         words.extend(clean_line.split())
 
   # Reconstruct content for display
-  content_for_display = "\n".join(modified_lines)
+  content_for_display = "\n" + "\n".join(modified_lines) + "\n"
   word_count = len(words)
 
   title = f"[bold blue]{name} | {word_count} words[/bold blue]"
