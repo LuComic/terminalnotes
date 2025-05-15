@@ -10,8 +10,15 @@ from rich.console import Console
 from rich.prompt import Prompt
 from rich.box import DOUBLE_EDGE
 import glob
+import platform
 
 console = Console()
+
+def clear_terminal():
+  if platform.system() == "Windows":
+    os.system("cls")
+  else:
+    os.system("clear")
 
 # Function to check if name already exists
 def check_name(name):
@@ -309,10 +316,12 @@ def search(query):
     if len(found_folders) == 1 and not found_notes_by_name:
       folder_to_open = found_folders[0]
       if os.path.exists(os.path.join(BASE_DIR, folder_to_open)):
+        clear_terminal()
         in_folder = folder_to_open
         list_notes(in_folder)
         return
     elif not found_folders and len(found_notes_by_name) == 1:
+      clear_terminal()
       folder, note_to_open = found_notes_by_name[0]
       read_note(folder, note_to_open)
       in_folder = folder
@@ -442,6 +451,8 @@ def edit_note_or_folder(name):
     if not os.path.exists(note_path):
       print("\n[bold red]Note not found.[/bold red]\n")
       return
+    
+    clear_terminal()
 
     # Step 1: Rename the note (optional)
     print("\nPress Enter to keep the current name, or type a new name:")
@@ -725,6 +736,19 @@ def run():
     choice = console.input("[bold blue]cmd: [/bold blue]").strip()
 
     if choice.startswith("o "):  # Open a folder or note
+      clear_terminal()
+      print(r"""
+ __        __   _                            _
+ \ \      / /__| | ___ ___  _ __ ___   ___  | |_ ___
+  \ \ /\ / / _ \ |/ __/ _ \| '_ ` _ \ / _ \ | __/ _ \
+   \ V  V /  __/ | (_| (_) | | | | | |  __/ | || (_) |
+  _ \_/\_/ \___|_|\___\___/|_| |_| |_|\___|  \__\___/
+ | |_ ___ _ __ _ __ ___  _ __   ___ | |_ ___  ___
+ | __/ _ \ '__| '_ ` _ \| '_ \ / _ \| __/ _ \/ __|
+ | ||  __/ |  | | | | | | | | | (_) | ||  __/\__ \
+  \__\___|_|  |_| |_| |_|_| |_|\___/ \__\___||___/
+  """)
+      print("'Help' for commands.")
       name = choice[2:]
       if in_folder:
         read_note(in_folder, name)
@@ -774,12 +798,38 @@ def run():
           print("\nGo into a folder to create a note.\n")
 
     elif choice == "l":  # List folders or notes
+      clear_terminal()
+      print(r"""
+ __        __   _                            _
+ \ \      / /__| | ___ ___  _ __ ___   ___  | |_ ___
+  \ \ /\ / / _ \ |/ __/ _ \| '_ ` _ \ / _ \ | __/ _ \
+   \ V  V /  __/ | (_| (_) | | | | | |  __/ | || (_) |
+  _ \_/\_/ \___|_|\___\___/|_| |_| |_|\___|  \__\___/
+ | |_ ___ _ __ _ __ ___  _ __   ___ | |_ ___  ___
+ | __/ _ \ '__| '_ ` _ \| '_ \ / _ \| __/ _ \/ __|
+ | ||  __/ |  | | | | | | | | | (_) | ||  __/\__ \
+  \__\___|_|  |_| |_| |_|_| |_|\___/ \__\___||___/
+  """)
+      print("'Help' for commands.")
       if in_folder:
         list_notes(in_folder)
       else:
         list_folders()
 
     elif choice == "b":  # Go back to folders
+      clear_terminal()
+      print(r"""
+ __        __   _                            _
+ \ \      / /__| | ___ ___  _ __ ___   ___  | |_ ___
+  \ \ /\ / / _ \ |/ __/ _ \| '_ ` _ \ / _ \ | __/ _ \
+   \ V  V /  __/ | (_| (_) | | | | | |  __/ | || (_) |
+  _ \_/\_/ \___|_|\___\___/|_| |_| |_|\___|  \__\___/
+ | |_ ___ _ __ _ __ ___  _ __   ___ | |_ ___  ___
+ | __/ _ \ '__| '_ ` _ \| '_ \ / _ \| __/ _ \/ __|
+ | ||  __/ |  | | | | | | | | | (_) | ||  __/\__ \
+  \__\___|_|  |_| |_| |_|_| |_|\___/ \__\___||___/
+  """)
+      print("'Help' for commands.")
       if in_folder:
         in_folder = None
         list_folders()
@@ -807,6 +857,7 @@ def run():
       console.print("\n[bold blue]Markdown:[/bold blue]\n\n[bold]-[][/bold] - uncomplete todo\n[bold]-[X][/bold] - complete todo\n[bold]-[/bold] - list item\n[bold]#[/bold] - header\n")
 
     elif choice == "dn":
+      clear_terminal()
       if "dailys" not in [f for f in os.listdir(BASE_DIR) if os.path.isdir(os.path.join(BASE_DIR, f))]:
         create_folder("dailys")
       in_folder = "dailys"
