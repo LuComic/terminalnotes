@@ -317,11 +317,35 @@ def search(query):
       folder_to_open = found_folders[0]
       if os.path.exists(os.path.join(BASE_DIR, folder_to_open)):
         clear_terminal()
+        print(r"""
+ __        __   _                            _
+ \ \      / /__| | ___ ___  _ __ ___   ___  | |_ ___
+  \ \ /\ / / _ \ |/ __/ _ \| '_ ` _ \ / _ \ | __/ _ \
+   \ V  V /  __/ | (_| (_) | | | | | |  __/ | || (_) |
+  _ \_/\_/ \___|_|\___\___/|_| |_| |_|\___|  \__\___/
+ | |_ ___ _ __ _ __ ___  _ __   ___ | |_ ___  ___
+ | __/ _ \ '__| '_ ` _ \| '_ \ / _ \| __/ _ \/ __|
+ | ||  __/ |  | | | | | | | | | (_) | ||  __/\__ \
+  \__\___|_|  |_| |_| |_|_| |_|\___/ \__\___||___/
+  """)
+        print("'Help' for commands.")
         in_folder = folder_to_open
         list_notes(in_folder)
         return
     elif not found_folders and len(found_notes_by_name) == 1:
       clear_terminal()
+      print(r"""
+ __        __   _                            _
+ \ \      / /__| | ___ ___  _ __ ___   ___  | |_ ___
+  \ \ /\ / / _ \ |/ __/ _ \| '_ ` _ \ / _ \ | __/ _ \
+   \ V  V /  __/ | (_| (_) | | | | | |  __/ | || (_) |
+  _ \_/\_/ \___|_|\___\___/|_| |_| |_|\___|  \__\___/
+ | |_ ___ _ __ _ __ ___  _ __   ___ | |_ ___  ___
+ | __/ _ \ '__| '_ ` _ \| '_ \ / _ \| __/ _ \/ __|
+ | ||  __/ |  | | | | | | | | | (_) | ||  __/\__ \
+  \__\___|_|  |_| |_| |_|_| |_|\___/ \__\___||___/
+  """)
+      print("'Help' for commands.")
       folder, note_to_open = found_notes_by_name[0]
       read_note(folder, note_to_open)
       in_folder = folder
