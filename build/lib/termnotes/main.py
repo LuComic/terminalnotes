@@ -781,7 +781,8 @@ def run():
           in_folder = name
           list_notes(name)
         else:
-          print("\n[bold red]Folder not found.[/bold red]\n")
+          list_folders()
+          print("[bold red]Folder not found.[/bold red]\n")
 
     elif choice.startswith("d "):  # Delete folder or note
       name = choice[2:]
