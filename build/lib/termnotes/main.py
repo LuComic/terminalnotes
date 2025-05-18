@@ -11,10 +11,7 @@ from rich.prompt import Prompt
 from rich.box import DOUBLE_EDGE
 import glob
 import platform
-import json
-import calendar
 import re
-import importlib.resources
 
 console = Console()
 
@@ -23,14 +20,6 @@ def clear_terminal():
     os.system("cls")
   else:
     os.system("clear")
-
-# Load data.json safely from the installed package
-with importlib.resources.path('termnotes', 'data.json') as data_file_path:
-  if data_file_path.stat().st_size == 0:
-    calendar_items = {}
-  else:
-    with open(data_file_path, 'r') as f:
-      calendar_items = json.load(f)
 
 # Function to check if name already exists
 def check_name(name):
@@ -749,7 +738,6 @@ def run():
   # Initialize storage
   setup()
   global in_folder
-  global calendar_items
 
   print(r"""
  __        __   _                            _
@@ -813,40 +801,10 @@ def run():
       else:
         if os.path.exists(os.path.join(BASE_DIR, name)):
           in_folder = name
-          if name == "Calendar":
-            calendar.open_calendar()
-          else:
-            list_notes(name)
+          list_notes(name)
         else:
           list_folders()
           print("[bold red]Folder not found.[/bold red]\n")
-
-    elif choice.startswith("cal "):
-      if in_folder:
-        name = choice[4:]
-        note_path = os.path.join(BASE_DIR, in_folder, f"{name}.txt")
-        if not os.path.exists(note_path):
-          print(f"[bold red]Note '{name}' not found in '{in_folder}'.[/bold red]")
-        else:
-          date = console.input("[gray]Date for the calendar (dd.mm.yy): [/gray]")
-          pattern = r"^\d{2}\.\d{2}\.\d{2}$"
-          if re.match(pattern, date) is not None:
-            calendar_items[name] = date
-            with open(data_file_path, 'w') as f:
-              json.dump(calendar_items, f)
-            console.print(f"\n[bold green]Note {name} added into calendar.[/bold green]\n")
-          else:
-            console.print("\n[bold red]Invalid date format.[/bold red]\n")
-      else:
-        print("\nGo into a folder to add a note into the calendar.\n")
-
-    elif choice.startswith("dcal "):
-      name = choice[5:]
-      if name in calendar_items:
-        del calendar_items[name]
-        print(f"\n[bold green]Note {name} removed from the calendar[/bold green]\n")
-      else:
-        print(f"\n[bold red]Note {name} not found in Calendar[/bold red]\n")
 
     elif choice.startswith("d "):  # Delete folder or note
       name = choice[2:]

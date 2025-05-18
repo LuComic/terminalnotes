@@ -2,9 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
   name="termnotes",  # This is your package name
-  version="20.8",
-  include_package_data=True,
-  package_data={'termnotes': ['data.json']},
+  version="30.6",
   install_requires=[
     "appdirs",
     "gnureadline",
