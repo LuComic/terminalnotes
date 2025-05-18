@@ -1,2 +1,2 @@
 [console_scripts]
-termnotes = termnotes.main:run
+tn = termnotes.main:run

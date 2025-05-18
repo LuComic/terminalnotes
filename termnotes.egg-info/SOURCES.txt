@@ -2,6 +2,7 @@ MANIFEST.in
 README.md
 setup.py
 termnotes/__init__.py
+termnotes/calendar.py
 termnotes/main.py
 termnotes.egg-info/PKG-INFO
 termnotes.egg-info/SOURCES.txt

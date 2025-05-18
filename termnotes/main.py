@@ -11,6 +11,10 @@ from rich.prompt import Prompt
 from rich.box import DOUBLE_EDGE
 import glob
 import platform
+import json
+import calendar
+import re
+import importlib.resources
 
 console = Console()
 
@@ -19,6 +23,14 @@ def clear_terminal():
     os.system("cls")
   else:
     os.system("clear")
+
+# Load data.json safely from the installed package
+with importlib.resources.path('termnotes', 'data.json') as data_file_path:
+  if data_file_path.stat().st_size == 0:
+    calendar_items = {}
+  else:
+    with open(data_file_path, 'r') as f:
+      calendar_items = json.load(f)
 
 # Function to check if name already exists
 def check_name(name):
@@ -83,9 +95,15 @@ def list_folders():
     folder_lines = []
     for i, folder in enumerate(folders):
       if i == len(folders) - 1:  # Last item in the list
-        folder_lines.append(f"[bold]{folder}[/bold] (f)")
+        if folder != "Calendar":
+          folder_lines.append(f"[bold]{folder}[/bold] (f)")
+        else:
+          folder_lines.append(f"[bold aquamarine1]{folder}[/bold aquamarine1] (C)")
       else:
-        folder_lines.append(f"[bold]{folder}[/bold] (f)")
+        if folder != "Calendar":
+          folder_lines.append(f"[bold]{folder}[/bold] (f)")
+        else:
+          folder_lines.append(f"[bold aquamarine1]{folder}[/bold aquamarine1] (C)")
     content = "\n".join([f"├── {line}" for line in folder_lines[:-1]] + [f"└── {folder_lines[-1]}"])
 
   inner_panel = Panel(content, title="[bold blue]Folders[/bold blue]", expand=True, box=DOUBLE_EDGE)  # Customize title color
@@ -121,12 +139,18 @@ def list_notes(folder):
   folder_lines = []
   for i, some_folder in enumerate(folders):
     if some_folder == folder:  # Last item in the list
-      folder_lines.append(f"[bold underline]{some_folder}[/bold underline] (f)")
+      if some_folder == "Calendar":
+        folder_lines.append(f"[bold underline aquamarine1]{some_folder}[/bold underline aquamarine1] (C)")
+      else:
+        folder_lines.append(f"[bold underline]{some_folder}[/bold underline] (f)")        
     else:
-      folder_lines.append(f"[bold]{some_folder}[/bold] (f)")
+      if some_folder == "Calendar":
+        folder_lines.append(f"[bold aquamarine1]{some_folder}[/bold aquamarine1] (C)")
+      else:
+        folder_lines.append(f"[bold]{some_folder}[/bold] (f)")
   folder_content = "\n".join([f"├── {line}" for line in folder_lines[:-1]] + [f"└── {folder_lines[-1]}"])
 
-  all_folders_panel = Panel(folder_content, title="[bold blue]Folders[/bold blue]", expand=True, box=DOUBLE_EDGE)  # Customize title color
+  all_folders_panel = Panel(folder_content, title="[bold blue]Folders[/bold blue]", expand=True, box=DOUBLE_EDGE)
 
   panel_title = f"[bold blue]{folder}[/bold blue]"  # Customize title color
   folder_panel = Panel(content, title=panel_title, expand=True, box=DOUBLE_EDGE)
@@ -141,7 +165,8 @@ def create_folder(name):
   folder_path = os.path.join(BASE_DIR, name)
   if check_name(name):
     os.makedirs(folder_path, exist_ok=True)
-    print(f"\n[bold green]New folder '{name}' created.[/bold green]\n")
+    if name != "Calendar" and name != "quick_notes":
+      print(f"\n[bold green]New folder '{name}' created.[/bold green]\n")
   else:
     print("\n[bold red]There's already a file with that name.[/bold red]\n")
 
@@ -364,6 +389,7 @@ def read_note(folder, name):
   word_count = 0
 
   if not os.path.exists(note_path):
+    list_notes(folder)
     console.print(f"\n[bold red]Note '{name}' not found in '{folder}'.[/bold red]\n")
     return
 
@@ -454,7 +480,10 @@ def delete_note_or_folder(name, is_folder):
   if is_folder:
     if os.path.exists(path) and os.path.isdir(path):
       shutil.rmtree(path)
-      print(f"\n[bold green]Folder '{name}' deleted.[/bold green]\n")
+      if name == "Calendar":
+        print(f"\n[bold green]Calendar deleted.[/bold green]\n")
+      else:
+        print(f"\n[bold green]Folder '{name}' deleted.[/bold green]\n")
     else:
       print("\n[bold red]Folder not found.[/bold red]\n")
   else:
@@ -720,6 +749,7 @@ def run():
   # Initialize storage
   setup()
   global in_folder
+  global calendar_items
 
   print(r"""
  __        __   _                            _
@@ -733,6 +763,10 @@ def run():
   \__\___|_|  |_| |_| |_|_| |_|\___/ \__\___||___/
   """)
   print("'Help' for commands.")
+
+  if "Calendar" not in [f for f in os.listdir(BASE_DIR) if os.path.isdir(os.path.join(BASE_DIR, f))]:
+    create_folder("Calendar") 
+
   quick_note_opened = False
   if quick_note_opened is False:
     if "quick_notes" not in [f for f in os.listdir(BASE_DIR) if os.path.isdir(os.path.join(BASE_DIR, f))]:
@@ -779,10 +813,40 @@ def run():
       else:
         if os.path.exists(os.path.join(BASE_DIR, name)):
           in_folder = name
-          list_notes(name)
+          if name == "Calendar":
+            calendar.open_calendar()
+          else:
+            list_notes(name)
         else:
           list_folders()
           print("[bold red]Folder not found.[/bold red]\n")
+
+    elif choice.startswith("cal "):
+      if in_folder:
+        name = choice[4:]
+        note_path = os.path.join(BASE_DIR, in_folder, f"{name}.txt")
+        if not os.path.exists(note_path):
+          print(f"[bold red]Note '{name}' not found in '{in_folder}'.[/bold red]")
+        else:
+          date = console.input("[gray]Date for the calendar (dd.mm.yy): [/gray]")
+          pattern = r"^\d{2}\.\d{2}\.\d{2}$"
+          if re.match(pattern, date) is not None:
+            calendar_items[name] = date
+            with open(data_file_path, 'w') as f:
+              json.dump(calendar_items, f)
+            console.print(f"\n[bold green]Note {name} added into calendar.[/bold green]\n")
+          else:
+            console.print("\n[bold red]Invalid date format.[/bold red]\n")
+      else:
+        print("\nGo into a folder to add a note into the calendar.\n")
+
+    elif choice.startswith("dcal "):
+      name = choice[5:]
+      if name in calendar_items:
+        del calendar_items[name]
+        print(f"\n[bold green]Note {name} removed from the calendar[/bold green]\n")
+      else:
+        print(f"\n[bold red]Note {name} not found in Calendar[/bold red]\n")
 
     elif choice.startswith("d "):  # Delete folder or note
       name = choice[2:]
@@ -859,7 +923,8 @@ def run():
         in_folder = None
         list_folders()
       else:
-        print("\nNowhere to go.\n")
+        list_folders()
+        print("Nowhere to go.\n")
 
     elif choice.startswith("e "):  # Edit folder or note
       name = choice[2:]
