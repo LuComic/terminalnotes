@@ -8,7 +8,6 @@ setup(
     "gnureadline",
     "pyperclip",
     "rich",
-    "termcolor",  # Keep this if you actually use it in your code elsewhere
   ],
   entry_points={
     'console_scripts': [

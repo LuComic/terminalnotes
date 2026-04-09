@@ -22,8 +22,13 @@ pipx install terminalnotes
   - Without fancy UI elements, ads and other bs, your workflow will be twice as fast and improve your productivity!
 
 ## Installation
-### Install may be buggy, so if it doesn't work you can copy the python script and configure that
-To install, run:
+Use a virtual environment so the package dependencies stay isolated from your
+global Python install:
 
 ```bash
-pipx install terminalnotes
+cd /path/to/terminalnotes
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```

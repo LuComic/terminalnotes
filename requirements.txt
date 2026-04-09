@@ -1,0 +1,4 @@
+appdirs
+gnureadline
+pyperclip
+rich
